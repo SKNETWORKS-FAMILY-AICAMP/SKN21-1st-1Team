@@ -1,3 +1,5 @@
+import pymysql;
+
 """
 Author: 박수빈
 Date: 2025-10-22
