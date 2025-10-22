@@ -6,7 +6,7 @@ Description: 공용함수
 
 # -------------------------------
 # DB 연결 공통 함수
-# TODO 이선님이 DB 생성 후, 아래 함수 변수 변경 필요.
+# TODO 이선님 DB 생성 후, 아래 함수 변수 변경 필요.
 # -------------------------------
 def get_connection():
     return pymysql.connect(
