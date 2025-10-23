@@ -1,8 +1,3 @@
-"""
-Author: 최주원
-Date: 2025-10-23
-Description: 폐차장 faq Data 선처리 프로그램
-"""
 from flask import Flask, jsonify, Response
 import mysql.connector
 import csv
@@ -31,7 +26,7 @@ def get_db_connection():
 
 # CSV 파일에서 데이터를 읽어 MySQL 데이터베이스에 삽입하는 함수
 def load_data_from_csv_to_mysql():
-    file_path = 'C:/Users/juwon/OneDrive/Desktop/sk1/SKN21-1st-1Team/FAQ.csv' # FAQ.CSV 파일 경로
+    file_path = 'C:/Users/juwon/OneDrive/Desktop/FAQ.csv'
     mydb = None
     mycursor = None
     try:
