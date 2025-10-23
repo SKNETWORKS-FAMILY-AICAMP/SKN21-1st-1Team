@@ -27,6 +27,12 @@ st.markdown("""
 .dataframe {
     width: 100%;
 }
+/* 🌟 추가: st.info 위젯 내부 텍스트 중앙 정렬 및 패딩 조정 */
+div[data-testid="stAlert"] div[role="alert"] {
+    text-align: center; /* 텍스트를 가운데 정렬 */
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,16 +193,22 @@ def show_scrapyard_finder():
         paginated_df = result_df.iloc[start_row:end_row].copy()
 
 
-        # 1. 카카오맵 링크 생성 및 버튼 추가
+        # 🌟 핵심 수정 1: '업체명'에 카카오맵 링크 적용
+        paginated_df['업체명'] = paginated_df.apply(
+            lambda row: f'<a href="{create_kakaomap_url(row["주소"])}" target="_blank">{row["업체명"]}</a>',
+            axis=1 # 행 단위로 적용하기 위해 axis=1 사용
+        )
+        
+        # 🌟 핵심 수정 2: '지도 보기' 링크 생성 (기존과 동일)
         paginated_df['지도 보기'] = paginated_df['주소'].apply(
             lambda addr: f'<a href="{create_kakaomap_url(addr)}" target="_blank">지도 보기</a>'
         )
         
-        # 2. 결과 표 출력 (st.dataframe 대신 HTML 마크다운 사용)
+        # 결과 표 출력: 이제 '업체명' 컬럼이 하이퍼링크로 표시됩니다.
         st.markdown(
             paginated_df[['업체명', '주소', '연락처', '지도 보기']].to_html(escape=False, index=False), 
             unsafe_allow_html=True
-        )
+        )    
         
         # 3. 페이지 이동 버튼 (페이징 버튼)
         st.markdown("---")
