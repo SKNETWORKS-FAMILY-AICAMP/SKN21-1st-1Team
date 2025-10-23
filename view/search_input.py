@@ -3,6 +3,7 @@ Author: 문지영
 Date: 2025-10-22
 Description: 폐차장 위치 검색 화면
 """
+
 import streamlit.components.v1 as components 
 import streamlit as st
 import pandas as pd
@@ -51,14 +52,9 @@ div[data-testid="stAlert"] div[role="alert"] {
     margin: 0px 0 10px 0;
     border: 1px solid #ddd;
 }
-/* 특정 클래스 내부 요소 중앙 정렬 /
 .stVerticalBlock .st-emotion-cache-wfksaw.e196pkbe2 {
-    display: flex;
-    flex-direction: column;
-    align-items: center;  / 가로 방향 중앙 정렬 /
-    justify-content: center;  / 세로 방향 중앙 정렬 /
-    text-align: center;  / 텍스트 중앙 정렬 */
-}
+    align-items: center;
+}                        
 </style>
 """, unsafe_allow_html=True)
 API_SCRAPYARD = "http://127.0.0.1:5000/scrapyards"
@@ -74,7 +70,7 @@ def create_kakaomap_url(address):
 
 def get_kakao_map_iframe_url(address):
     """주소를 카카오맵 iframe 임베딩용 URL로 인코딩하여 반환합니다. (검색창 숨김)"""
-    # 카카오맵 개발자 API를 사용하지 않고 iframe 검색 기능을 활용합니다.
+    # 카카오맵 개발자 API를 사용하지 않고 iframe 검색 기능을 활용
     encoded_address = urllib.parse.quote(address)
     # 맵 주소 + 검색어를 iframe에 바로 넣으면 됩니다.
     return f"https://map.kakao.com/?q={encoded_address}&map_type=TYPE_MAP&src=internal"
@@ -253,7 +249,7 @@ def show_scrapyard_finder():
 
         # 결과 테이블 헤더 수동 생성
         # (이전 요청에 따른 버튼 너비 해결을 위해 4번째 컬럼 비율 조정된 것 유지)
-        header_cols = st.columns([2.5, 2.5, 2.0, 2.0]) 
+        header_cols = st.columns([2.5, 3.5, 1.5, 2.0]) 
         header_cols[0].markdown('**업체명**')
         header_cols[1].markdown('**주소**')
         header_cols[2].markdown('**연락처**')
