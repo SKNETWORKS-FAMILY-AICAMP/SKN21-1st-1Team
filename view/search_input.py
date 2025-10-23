@@ -3,14 +3,11 @@ Author: 문지영
 Date: 2025-10-22
 Description: 폐차장 위치 검색 화면
 """
-
-
+import streamlit.components.v1 as components 
 import streamlit as st
 import pandas as pd
 import urllib.parse
 import math
-import streamlit.components.v1 as components # st.components.v1.html 사용을 위해 추가
-
 
 
 st.markdown("""
@@ -35,23 +32,6 @@ div[data-testid="stAlert"] div[role="alert"] {
     padding-bottom: 15px;
 }
 
-/* 수동으로 만든 테이블의 구분선 스타일 */
-.row-divider {
-    margin: 0px 0;
-    border: 0.5px solid #eee;
-}
-.header-divider {
-    margin: 0px 0 10px 0;
-    border: 1px solid #ddd;
-}
-
-/* 2. 흰색 배경 버튼 스타일 (지도 보기) */
-.white-button > button {
-    color: black !important;
-    background-color: white !important; 
-    border-color: #ccc !important;
-    font-weight: bold;
-}
 /* DataFrame 테이블 너비를 100%로 설정 */
 .dataframe {
     width: 100%;
@@ -70,6 +50,14 @@ div[data-testid="stAlert"] div[role="alert"] {
 .header-divider {
     margin: 0px 0 10px 0;
     border: 1px solid #ddd;
+}
+/* 특정 클래스 내부 요소 중앙 정렬 /
+.stVerticalBlock .st-emotion-cache-wfksaw.e196pkbe2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;  / 가로 방향 중앙 정렬 /
+    justify-content: center;  / 세로 방향 중앙 정렬 /
+    text-align: center;  / 텍스트 중앙 정렬 */
 }
 </style>
 """, unsafe_allow_html=True)
@@ -128,26 +116,6 @@ def get_scrapyard_list_with_address(selected_area, selected_district):
     return df.reset_index(drop=True)
 
 
-# --------------------
-# 4. Mock Data for FAQ 검색 (search_faq 함수 정의. 임의로 지정)
-# --------------------
-def search_faq(keyword):
-    # Mock Data for FAQ 검색
-    faq_data = [
-        {'Q': '폐차 절차는 어떻게 되나요?', 'A': '차량 소유자는 신분증 사본과 자동차 등록증을 준비하여 폐차장에 인계하면 됩니다.', '출처': 'KADRA'},
-        {'Q': '자동차를 폐차하면 환급받을 수 있는 것이 있나요?', 'A': '자동차세 선납분과 보험료 잔여액을 환급받을 수 있습니다.', '출처': 'KADRA'},
-        {'Q': '압류나 저당이 잡혀 있어도 폐차가 가능한가요?', 'A': '차령초과말소 제도(선폐차)를 통해 가능합니다.', '출처': 'KADRA'},
-        {'Q': '폐차는 어디서 해야 하나요?', 'A': '관허 폐차장을 이용해야 합니다.', '출처': 'KADRA'},
-    ]
-    
-    # 키워드와 관련된 FAQ만 필터링합니다.
-    if not keyword:
-        return []
-        
-    filtered_faq = [item for item in faq_data if keyword.lower() in item['Q'].lower() or keyword.lower() in item['A'].lower()]
-    return filtered_faq
-# --------------------
-
 # ----------------------------------------------------
 # 🌟 콜백 함수: '검색' 버튼 클릭 시 실행
 # ----------------------------------------------------
@@ -166,6 +134,7 @@ def perform_search_and_reset():
     st.session_state.last_search_df = result_df
 
 
+
 # 1. 페이지 설정 (기존과 동일)
 st.set_page_config(
     page_title="수도권 폐차장 조회 및 FAQ 시스템",
@@ -175,10 +144,11 @@ st.set_page_config(
 )
 
 
-# 2. 사이드바 메뉴 구현 (기존과 동일)
+# 2. 사이드바 메뉴 구현 (key 추가로 DuplicateElementId 오류 해결)
 st.sidebar.title("⚙️ 시스템 메뉴")
 menu = st.sidebar.radio(" ",
-    ('폐차장 조회', 'FAQ 검색 시스템', '통계 시각화', 'SQL 질의 진행')
+    ('폐차장 조회', 'FAQ 검색 시스템'),
+    key='sidebar_menu' # <-- key 추가
 )
 
 
@@ -191,7 +161,7 @@ if 'last_search_df' not in st.session_state:
 if 'map_info' not in st.session_state:
     st.session_state.map_info = {'address': None, 'url': None}
     
-# 검색 드롭다운 선택값을 위한 세션 상태 초기화 (AttributeError 방지)
+# 검색 드롭다운 선택값을 위한 세션 상태 초기화 
 if 'area_select' not in st.session_state:
     st.session_state.area_select = '전체'
 if 'district_select' not in st.session_state:
@@ -199,26 +169,17 @@ if 'district_select' not in st.session_state:
 
 
 # --------------------
-# 5. 폐차장 조회 함수 (콜백 함수를 사용하여 오류 해결)
+# 5. 폐차장 조회 함수 
 # --------------------
 def show_scrapyard_finder():
     """ 폐차장 조회 페이지 (지도 임베드 기능 통합) """
     st.header ("🚙 수도권 폐차장 조회")
-    st.markdown(
-        """
-            <style>
-                .sub_title {
-                    margin: 0px;
-                }
-            </style>
-            <div class="sub_title">
-        """,
-        unsafe_allow_html=True
-    )
+    
+    # 기존 코드에서 발견된 불필요한 HTML 마크다운 제거 (st.write로 대체)
     st.write("원하는 지역과 세부 지역을 선택한 후 검색하세요.")
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 1, 0.5])
+    # col3의 비율을 0.4로 유지하며 버튼이 한 줄로 나오도록 합니다.
+    col1, col2, col3 = st.columns([1, 1, 0.4])
 
     # 검색 조건을 세션 상태에 저장 (key를 사용해 st.session_state에 자동 저장됨)
     with col1:
@@ -236,7 +197,7 @@ def show_scrapyard_finder():
             f"'{st.session_state.area_select}'의 세부 지역 검색 (구/시)",
             detail_options,
             index=detail_options.index(st.session_state.district_select) if st.session_state.district_select in detail_options else detail_options.index('전체'),
-            key="district_select" # 이 key로 st.session_state.district_select에 값이 저장됨
+            key="district_select" # 이 key로 st.session_state.district_district에 값이 저장됨
         )
 
     # 검색 버튼 (콜백 함수 사용)
@@ -245,9 +206,6 @@ def show_scrapyard_finder():
         # '검색' 버튼 클릭 시 perform_search_and_reset 함수가 실행되고 st.rerun() 됨
         st.button("검색", on_click=perform_search_and_reset, key="search_button_widget", use_container_width=True) 
         st.markdown('</div>', unsafe_allow_html=True)    
-        
-        # 검색 결과는 콜백 함수에서 이미 st.session_state.last_search_df에 저장했으므로, 
-        # 이 함수 외부에서는 검색 로직을 다시 실행하지 않습니다.
                         
         
 
@@ -272,19 +230,20 @@ def show_scrapyard_finder():
 
 
         # 결과 테이블 헤더 수동 생성
-        header_cols = st.columns([2.5, 3.5, 1.5, 1.5])
+        # (이전 요청에 따른 버튼 너비 해결을 위해 4번째 컬럼 비율 조정된 것 유지)
+        header_cols = st.columns([2.5, 2.5, 2.0, 2.0]) 
         header_cols[0].markdown('**업체명**')
         header_cols[1].markdown('**주소**')
         header_cols[2].markdown('**연락처**')
         header_cols[3].markdown('**지도**')
-        # st.dataframe(filtered[['업체명','주소','연락처','지도']])
 
         st.markdown('<hr class="header-divider"/>', unsafe_allow_html=True) # 헤더와 내용 구분선
 
         
         # 결과 테이블 내용 수동 생성 (버튼 통합)
         for index, row in paginated_df.iterrows():
-            row_cols = st.columns([2.5, 3.5, 1.5, 1.5]) # 너비 비율은 헤더와 동일하게 유지
+            # (이전 요청에 따른 버튼 너비 해결을 위해 4번째 컬럼 비율 조정된 것 유지)
+            row_cols = st.columns([2.5, 3.5, 1.5, 2.0]) # 너비 비율은 헤더와 동일하게 유지
             
             # 업체명 (링크 대신 텍스트 출력)
             row_cols[0].markdown(f"**{row['업체명']}**", unsafe_allow_html=True)
@@ -297,7 +256,6 @@ def show_scrapyard_finder():
 
             # '지도 보기' 버튼 (버튼 클릭 시 지도 임베드)
             with row_cols[3]:
-                # 업체명 대신 '지도 보기' 버튼 클릭으로 임베드 기능 구현
                 if st.button("🗺️ 지도 보기", key=f"mapbtn{row['ID']}", use_container_width=True):
                     st.session_state.map_info['address'] = row['주소']
                     st.session_state.map_info['url'] = get_kakao_map_iframe_url(row['주소'])
@@ -332,7 +290,7 @@ def show_scrapyard_finder():
         st.info("검색 조건을 선택하고 '검색' 버튼을 눌러주세요.")
 
 
-    # ------------------ 🌟 5-3. 지도 임베드 영역 (함수 마지막에 위치) ------------------
+    # 🌟 5-3. 지도 임베드 영역 (함수 마지막에 위치) ------------------
     if st.session_state.map_info['address']:
         import streamlit.components.v1 as components # 함수 내에서 다시 import
         st.markdown("---")
@@ -356,35 +314,37 @@ def show_scrapyard_finder():
             """,
             height=520, # iframe 높이
         )
-# ----------------------------------------------------
 
 
 # ----------------------------------------------------
-# FAQ 시스템 함수 (기존과 동일)
+# 6. FAQ 시스템 함수 (검색 기능 제거, expander로 목록 표시)
 # ----------------------------------------------------
 def show_faq_system():
-    """[2] FAQ 검색 시스템 페이지"""
+    """[2] FAQ 검색 시스템 페이지: 검색 대신 FAQ 목록을 바로 표시합니다."""
     st.header("❓ 폐차 관련 자주 묻는 질문 (FAQ)")
-    st.write("궁금한 키워드를 입력하시면 관련된 질문과 답변을 찾아드립니다.")
+    st.write("자주 묻는 질문 목록입니다. 질문을 클릭하시면 답변을 확인할 수 있습니다.")
     
-    # 사용자 입력: 검색 키워드 위젯
-    keyword = st.text_input("검색 키워드 입력", max_chars=50, key="faq_keyword")
+    # FAQ 데이터 정의 (검색 기능 제거 후 사용)
+    faq_data = [
+        {'Q': '관허 폐차장이 아닌 곳에서 폐차 할 경우 불이익이 있나요?', 'A': '관허 폐차장이 아닌 곳(폐차대행업체, 폐차브로커 등)에 폐차를 신청할 경우 정상적으로 말소등록이 되지 않아 차주에게 세금이 계속 부과되는 경우가 있고, 폐차대행업자와의 연락이 두절되어 차를 분실하는 등 여러 피해 사례가 속출하고 있으니 꼭 관허 폐차장에 의뢰하시기 바랍니다.', '출처': '한국 자동차 해체 재활용업 협회'},
+        {'Q': '본인이 직접 말소하려면 어떻게 해야 하나요?', 'A': '말소구비서류(폐차인수증명서, 말소등록신청서)를 지참하여 등록관청에 직접 가셔서 말소신청 하시거나 인터넷 자동차민원 대국민포털(http://www.ecar.go.kr) 에서 공인인증서를 이용하여 로그인 하신 후 신청하실 수 있습니다.', '출처': '한국 자동차 해체 재활용업 협회'},
+        {'Q': '자동차 보험은 어떻게 처리해야 하나요?', 'A': '말소등록 후 말소사실증명서를 발급 받아 보험회사로부터 남은 보험료를 환급 받거나 새 차로 이전이 가능합니다.', '출처': '한국 자동차 해체 재활용업 협회'},
+        {'Q': '폐차가 제대로 됐는지 어떻게 확인하나요?', 'A': '폐차가 처리되었다는 증명서인 폐차인수증명서를 발급받아 확인하시면 됩니다. 만약 말소등록신청대행을 폐차장에 신청하셨다면 말소완료 이후 등록관청에서 말소사실증명서를 발급받아 확인하실 수 있고 인터넷 자동차민원 대국민포털(http://www.ecar.go.kr) 에서도 확인 가능합니다. ', '출처': '한국 자동차 해체 재활용업 협회'},
+        {'Q': '본인이 차주가 아닌 경우 어떻게 폐차하나요?', 'A': '폐차 시 본인이 아닌 경우 차량등록증/차주 인감증명서/대리인 신분증 이 필요합니다.', '출처': '한국 자동차 해체 재활용업 협회'},
+        {'Q': '폐차 할 수 있는 지역이 정해져 있나요?', 'A': '폐차는 전 지역에서 가능하니 계신 곳 가까운 관허 폐차장에 문의하시면 됩니다.', '출처': '한국 자동차 해체 재활용업 협회'}
+    ]
     
-    if st.button("FAQ 검색", key="faq_search_btn"):
-        if keyword:
-            faq_list = search_faq(keyword)
-            
-            if faq_list:
-                st.info(f"'{keyword}'와(과) 관련된 FAQ **{len(faq_list)}** 건이 검색되었습니다.")
-                
-                for i, item in enumerate(faq_list):
-                    with st.expander(f"**Q{i+1}.** {item['Q']}"):
-                        st.markdown(f"**A.** {item['A']}")
-                        st.caption(f"**출처:** {item['출처']}")
-            else:
-                st.warning(f"'{keyword}'와(과) 관련된 질문을 찾을 수 없습니다.")
-        else:
-            st.error("검색 키워드를 입력해주세요.")
+    # st.expander를 사용하여 질문 목록을 표시하고, 클릭 시 답변을 보여줍니다.
+    if faq_data:
+        # st.info(f"총 {len(faq_data)} 건의 FAQ를 제공합니다.") # 정보 메시지 (선택 사항)
+        
+        for i, item in enumerate(faq_data):
+            # expander를 사용하여 질문을 표시하고, 열리면 답변이 보이게 합니다.
+            with st.expander(f"**Q{i+1}.** {item['Q']}"):
+                st.markdown(f"**A.** {item['A']}")
+                st.caption(f"**출처:** {item['출처']}")
+    else:
+        st.warning("현재 제공 가능한 FAQ 목록이 없습니다.")
 
 
 # 4. 메인 라우팅 (기존과 동일)
