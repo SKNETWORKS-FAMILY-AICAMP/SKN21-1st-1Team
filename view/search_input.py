@@ -20,14 +20,14 @@ st.markdown("""
     padding: 8px 16px;
     font-weight: bold;
     border: 1px solid #FF4B4B;
-    /* 🌟 핵심 수정: 드롭다운 박스와 수직 위치를 맞추기 위해 마진 조정 */
+    /* 드롭다운 박스와 수직 위치를 맞추기 위해 마진 조정 */
     margin-top: 25px; /* 30px에서 25px로 조정하여 높이를 맞춥니다. */
 }
 /* DataFrame 테이블 너비를 100%로 설정 (좌우 간격 맞추기) */
 .dataframe {
     width: 100%;
 }
-/* 🌟 추가: st.info 위젯 내부 텍스트 중앙 정렬 및 패딩 조정 */
+/* st.info 위젯 내부 텍스트 중앙 정렬 및 패딩 조정 */
 div[data-testid="stAlert"] div[role="alert"] {
     text-align: center; /* 텍스트를 가운데 정렬 */
     padding-top: 15px;
@@ -193,13 +193,13 @@ def show_scrapyard_finder():
         paginated_df = result_df.iloc[start_row:end_row].copy()
 
 
-        # 🌟 핵심 수정 1: '업체명'에 카카오맵 링크 적용
+        # '업체명'에 카카오맵 링크 적용
         paginated_df['업체명'] = paginated_df.apply(
             lambda row: f'<a href="{create_kakaomap_url(row["주소"])}" target="_blank">{row["업체명"]}</a>',
             axis=1 # 행 단위로 적용하기 위해 axis=1 사용
         )
         
-        # 🌟 핵심 수정 2: '지도 보기' 링크 생성 (기존과 동일)
+        # '지도 보기' 링크 생성 (기존과 동일)
         paginated_df['지도 보기'] = paginated_df['주소'].apply(
             lambda addr: f'<a href="{create_kakaomap_url(addr)}" target="_blank">지도 보기</a>'
         )
@@ -221,7 +221,7 @@ def show_scrapyard_finder():
                     st.rerun() # 페이지 이동 후 재실행
 
         with col_page_info:
-            st.markdown(f"<div style='text-align:center;'>페이지 **{current_page}** / **{total_pages}**</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align:center;'>페이지 {current_page} / {total_pages}</div>", unsafe_allow_html=True)
             
         with col_next:
             if current_page < total_pages:
