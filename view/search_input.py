@@ -10,6 +10,28 @@ import urllib.parse
 import math
 
 
+st.markdown("""
+<style>
+/* 빨간색 검색 버튼 스타일 정의 */
+.stButton>button {
+    color: white;
+    background-color: #FF4B4B; /* Streamlit 기본 빨간색 */
+    border-radius: 5px;
+    padding: 8px 16px;
+    font-weight: bold;
+    border: 1px solid #FF4B4B;
+    /* 🌟 핵심 수정: 드롭다운 박스와 수직 위치를 맞추기 위해 마진 조정 */
+    margin-top: 25px; /* 30px에서 25px로 조정하여 높이를 맞춥니다. */
+}
+/* DataFrame 테이블 너비를 100%로 설정 (좌우 간격 맞추기) */
+.dataframe {
+    width: 100%;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+
 # --------------------
 # 1. 카카오맵 URL 생성 함수 (상단에 정의)
 # --------------------
@@ -111,7 +133,7 @@ def show_scrapyard_finder():
     st.header ("📍수도권 폐차장 조회")
     st.write("원하는 지역과 세부 지역을 선택한 후 검색하세요.")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns([1, 1, 0.5])
 
     with col1:
         selected_area = st.selectbox(
@@ -131,23 +153,23 @@ def show_scrapyard_finder():
         )
 
     # 검색 버튼
-    col_empty1, col_btn, col_empty2 = st.columns([1, 0.5, 1])
-    
-    if col_btn.button("검색", use_container_width=True):
+    with col3:
+        # st.button 앞에 아무 위젯도 넣지 않고 CSS의 margin-top으로 높이를 맞춥니다.
+        if st.button("검색", use_container_width=True, key="search_button"):
 
-        # 검색 시 항상 첫 페이지로 초기화
-        st.session_state.current_page = 1
+            # 검색 시 항상 첫 페이지로 초기화
+            st.session_state.current_page = 1
         
-        # 🚨 DB 함수 호출 및 결과 저장
-        result_df = get_scrapyard_list_with_address(selected_area, selected_district)
-        st.session_state.last_search_df = result_df # 세션 상태에 전체 검색 결과 저장
+            # 🚨 DB 함수 호출 및 결과 저장
+            result_df = get_scrapyard_list_with_address(selected_area, selected_district)
+            st.session_state.last_search_df = result_df # 세션 상태에 전체 검색 결과 저장
         
-        st.info(f"선택 지역: **{selected_area}** / **{selected_district}** 에 대한 폐차장 정보를 조회합니다.")
+            st.info(f"선택 지역: **{selected_area}** / **{selected_district}** 에 대한 폐차장 정보를 조회합니다.")
 
 
 # -----------------------------------------------------------------
-    # 🌟 페이징 및 결과 출력 영역
-    # -----------------------------------------------------------------
+# 🌟 페이징 및 결과 출력 영역
+# -----------------------------------------------------------------
     
     if not st.session_state.last_search_df.empty:
         
@@ -162,7 +184,6 @@ def show_scrapyard_finder():
         # 현재 페이지에 해당하는 데이터 슬라이싱
         start_row = (current_page - 1) * page_size
         end_row = start_row + page_size
-        
         paginated_df = result_df.iloc[start_row:end_row].copy()
 
 
