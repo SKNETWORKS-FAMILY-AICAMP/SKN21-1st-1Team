@@ -12,16 +12,25 @@ import streamlit.components.v1 as components # st.components.v1.html 사용을 �
 
 st.markdown("""
 <style>
-/* 빨간색 검색 버튼 스타일 정의 */
-.stButton>button {
-    color: white;
-    background-color: #FF4B4B; 
-    border-radius: 5px;
-    padding: 8px 16px;
+/* 1. 파란색 버튼 스타일 (검색 및 다음 페이지) */
+
+.blue-button button {
+    color: white !important;
+    background-color: #0087c2 !important; /* Streamlit 기본 파란색 계열 */
+    border-color: #0087c2 !important;
     font-weight: bold;
-    border: 1px solid #FF4B4B;
-    /* 드롭다운 박스와 수직 위치를 맞추기 위해 마진 조정 */
-    margin-top: 25px; 
+    margin-top: 10px !important;
+}
+/* 2. 흰색 배경 버튼 스타일 (지도 보기) */
+.white-button > button {
+    color: black !important;
+    background-color: white !important; 
+    border-color: #ccc !important;
+    font-weight: bold;
+}
+/* DataFrame 테이블 너비를 100%로 설정 */
+.dataframe {
+    width: 100%;
 }
 /* st.info 위젯 내부 텍스트 중앙 정렬 및 패딩 조정 */
 div[data-testid="stAlert"] div[role="alert"] {
@@ -29,8 +38,7 @@ div[data-testid="stAlert"] div[role="alert"] {
     padding-top: 15px;
     padding-bottom: 15px;
 }
-
-/* 🌟 추가: 수동으로 만든 테이블의 구분선 스타일 */
+/* 수동 테이블 구분선 스타일 */
 .row-divider {
     margin: 0px 0;
     border: 0.5px solid #eee;
@@ -78,7 +86,6 @@ REGION_DETAILS = {
 # --------------------
 def get_scrapyard_list_with_address(selected_area, selected_district):
     data = {
-        # 🌟 ID 추가: 버튼 고유 키 생성에 사용
         'ID': range(1, 82), 
         '업체명': [f'{area} {dist} 폐차장 {i}' for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
         '지역': [area for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
@@ -134,12 +141,12 @@ menu = st.sidebar.radio(" ",
 )
 
 
-# 🌟 세션 상태 초기화 (페이지네이션 및 지도)
+# 세션 상태 초기화 (페이지네이션 및 지도)
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 1
 if 'last_search_df' not in st.session_state:
     st.session_state.last_search_df = pd.DataFrame()
-# 🌟 지도 임베드 정보를 위한 세션 상태 추가
+# 지도 임베드 정보를 위한 세션 상태 추가
 if 'map_info' not in st.session_state:
     st.session_state.map_info = {'address': None, 'url': None}
 
@@ -149,7 +156,7 @@ if 'map_info' not in st.session_state:
 # --------------------
 def show_scrapyard_finder():
     """ 폐차장 조회 페이지 (지도 임베드 기능 통합) """
-    st.header ("📍수도권 폐차장 조회")
+    st.header ("🚙 수도권 폐차장 조회")
     st.write("원하는 지역과 세부 지역을 선택한 후 검색하세요.")
 
     col1, col2, col3 = st.columns([1, 1, 0.5])
@@ -173,20 +180,21 @@ def show_scrapyard_finder():
 
     # 검색 버튼
     with col3:
-        if st.button("검색", use_container_width=True, key="search_button"):
-            # 검색 시 항상 첫 페이지로 초기화 및 지도 정보 삭제
-            st.session_state.current_page = 1
-            st.session_state.map_info = {'address': None, 'url': None}
+        st.markdown('<div class="blue-button">', unsafe_allow_html=True)
+        st.button("검색", key="search_button", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)    
+        #     # 검색 시 항상 첫 페이지로 초기화 및 지도 정보 삭제 
+        # st.session_state.current_page = 1
+        # st.session_state.map_info = {'address': None, 'url': None}
         
-            # 🚨 DB 함수 호출 및 결과 저장
-            result_df = get_scrapyard_list_with_address(selected_area, selected_district)
-            st.session_state.last_search_df = result_df
+        # # DB 함수 호출 및 결과 저장 
+        # result_df = get_scrapyard_list_with_address(selected_area, selected_district)
+        # st.session_state.last_search_df = result_df
+                        
         
-            st.info(f"선택 지역: **{selected_area}** / **{selected_district}** 에 대한 폐차장 정보를 조회합니다.")
-
 
 # -----------------------------------------------------------------
-# 🌟 페이징 및 결과 출력 영역
+# 페이징 및 결과 출력 영역
 # -----------------------------------------------------------------
     
     if not st.session_state.last_search_df.empty:
@@ -197,7 +205,7 @@ def show_scrapyard_finder():
         total_pages = math.ceil(total_rows / page_size)
         current_page = st.session_state.current_page
         
-        st.success(f"검색 조건에 맞는 폐차장 **{total_rows}** 건을 찾았습니다. (총 {total_pages} 페이지)")
+        st.info(f"검색 조건에 맞는 폐차장 **{total_rows}**건을 찾았습니다.")
 
         # 현재 페이지에 해당하는 데이터 슬라이싱
         start_row = (current_page - 1) * page_size
@@ -205,7 +213,7 @@ def show_scrapyard_finder():
         paginated_df = result_df.iloc[start_row:end_row].copy()
 
 
-        # 🌟 결과 테이블 헤더 수동 생성
+        # 결과 테이블 헤더 수동 생성
         header_cols = st.columns([2.5, 3.5, 1.5, 1.5])
         header_cols[0].markdown('**업체명**')
         header_cols[1].markdown('**주소**')
@@ -214,7 +222,7 @@ def show_scrapyard_finder():
         st.markdown('<hr class="header-divider"/>', unsafe_allow_html=True) # 헤더와 내용 구분선
 
         
-        # 🌟 결과 테이블 내용 수동 생성 (버튼 통합)
+        # 결과 테이블 내용 수동 생성 (버튼 통합)
         for index, row in paginated_df.iterrows():
             row_cols = st.columns([2.5, 3.5, 1.5, 1.5]) # 너비 비율은 헤더와 동일하게 유지
             
@@ -227,7 +235,7 @@ def show_scrapyard_finder():
             # 연락처
             row_cols[2].markdown(row['연락처'])
 
-            # 🌟 '지도 보기' 버튼 (버튼 클릭 시 지도 임베드)
+            # '지도 보기' 버튼 (버튼 클릭 시 지도 임베드)
             with row_cols[3]:
                 # 업체명 대신 '지도 보기' 버튼 클릭으로 임베드 기능 구현
                 if st.button("🗺️ 지도 보기", key=f"mapbtn{row['ID']}", use_container_width=True):
