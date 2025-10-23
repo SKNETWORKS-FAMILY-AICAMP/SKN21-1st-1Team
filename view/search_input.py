@@ -4,23 +4,10 @@ Date: 2025-10-22
 Description: 폐차장 위치 검색 화면
 """
 
-# Data 화면 출력을 위한 streamlit 코드 작성.
-# TODO 지영님 Streamlit 활용하여 화면 작성 필요.
-
-
-# 지역별로 했을 때 갯수 
-# 페이지 처리하기. 
-# 만약 조회했는데 50개 나오면 한 화면이 아니라 임의로 5개 정도 설정하고 
-# 테이블 박스로 줄텐데 동적으로 처리하기. 길면 맞춰지게끔. 
-
-# 업체명 누르면 지도에 찍히게.
-
-
 import streamlit as st
 import pandas as pd
 import urllib.parse
 import math
-
 
 
 # --------------------
@@ -33,7 +20,7 @@ def create_kakaomap_url(address):
     return f"{base_url}?q={encoded_address}"
 
 # --------------------
-# 지역별 세부 구/시 데이터 정의 (전역 변수 위치. 임의의 데이터임 백엔드 분들이 새로 주실 것)
+# 지역별 세부 구/시 데이터 정의 (전역 변수 위치. 임의로 지정.)
 # --------------------
 SEOUL_DISTRICTS = ['강남구', '성북구', '성동구', '영등포구', '전체']
 GYEONGGI_CITIES = ['수원시', '성남시', '용인시', '화성시', '전체']
@@ -47,7 +34,7 @@ REGION_DETAILS = {
 }
 
 # --------------------
-# 3. Mock Data (백엔드 대체 함수)
+# 3. Mock Data (백엔드 대체 함수. 임의로 지정)
 # --------------------
 def get_scrapyard_list_with_address(selected_area, selected_district):
     data = {
@@ -69,7 +56,7 @@ def get_scrapyard_list_with_address(selected_area, selected_district):
 
 
 # --------------------
-# 4. Mock Data for FAQ 검색 (search_faq 함수 정의)
+# 4. Mock Data for FAQ 검색 (search_faq 함수 정의. 임의로 지정)
 # --------------------
 def search_faq(keyword):
     # Mock Data for FAQ 검색
