@@ -3,6 +3,8 @@ Author: 문지영
 Date: 2025-10-22
 Description: 폐차장 위치 검색 화면
 """
+
+
 import streamlit as st
 import pandas as pd
 import urllib.parse
@@ -10,19 +12,22 @@ import math
 import streamlit.components.v1 as components # st.components.v1.html 사용을 위해 추가
 
 
+
 st.markdown("""
+
 <style>
-/* 빨간색 검색 버튼 스타일 정의 */
+/* 파란색 검색 버튼 스타일 정의 */
 .stButton>button {
     color: white;
-    background-color: #FF4B4B; 
+    background-color: #1158e0; 
     border-radius: 5px;
     padding: 8px 16px;
     font-weight: bold;
-    border: 1px solid #FF4B4B;
+    border: 1px solid #1158e0;
     /* 드롭다운 박스와 수직 위치를 맞추기 위해 마진 조정 */
-    margin-top: 25px; 
+    margin-top: 10px; 
 }
+            
 /* st.info 위젯 내부 텍스트 중앙 정렬 및 패딩 조정 */
 div[data-testid="stAlert"] div[role="alert"] {
     text-align: center; 
@@ -30,7 +35,34 @@ div[data-testid="stAlert"] div[role="alert"] {
     padding-bottom: 15px;
 }
 
-/* 🌟 추가: 수동으로 만든 테이블의 구분선 스타일 */
+/* 수동으로 만든 테이블의 구분선 스타일 */
+.row-divider {
+    margin: 0px 0;
+    border: 0.5px solid #eee;
+}
+.header-divider {
+    margin: 0px 0 10px 0;
+    border: 1px solid #ddd;
+}
+
+/* 2. 흰색 배경 버튼 스타일 (지도 보기) */
+.white-button > button {
+    color: black !important;
+    background-color: white !important; 
+    border-color: #ccc !important;
+    font-weight: bold;
+}
+/* DataFrame 테이블 너비를 100%로 설정 */
+.dataframe {
+    width: 100%;
+}
+/* st.info 위젯 내부 텍스트 중앙 정렬 및 패딩 조정 */
+div[data-testid="stAlert"] div[role="alert"] {
+    text-align: center; 
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+/* 수동 테이블 구분선 스타일 */
 .row-divider {
     margin: 0px 0;
     border: 0.5px solid #eee;
@@ -78,7 +110,6 @@ REGION_DETAILS = {
 # --------------------
 def get_scrapyard_list_with_address(selected_area, selected_district):
     data = {
-        # 🌟 ID 추가: 버튼 고유 키 생성에 사용
         'ID': range(1, 82), 
         '업체명': [f'{area} {dist} 폐차장 {i}' for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
         '지역': [area for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
@@ -117,6 +148,23 @@ def search_faq(keyword):
     return filtered_faq
 # --------------------
 
+# ----------------------------------------------------
+# 🌟 콜백 함수: '검색' 버튼 클릭 시 실행
+# ----------------------------------------------------
+def perform_search_and_reset():
+    """검색을 수행하고 페이지 및 지도 세션 상태를 초기화합니다."""
+    # 드롭다운 위젯의 현재 값(세션 상태에 저장되어 있음)을 사용하여 검색
+    selected_area = st.session_state.area_select # key="area_select"의 값
+    selected_district = st.session_state.district_select # key="district_select"의 값
+    
+    # 1. 페이지 초기화
+    st.session_state.current_page = 1
+    st.session_state.map_info = {'address': None, 'url': None}
+    
+    # 2. DB 함수 호출 및 결과 저장
+    result_df = get_scrapyard_list_with_address(selected_area, selected_district)
+    st.session_state.last_search_df = result_df
+
 
 # 1. 페이지 설정 (기존과 동일)
 st.set_page_config(
@@ -134,59 +182,77 @@ menu = st.sidebar.radio(" ",
 )
 
 
-# 🌟 세션 상태 초기화 (페이지네이션 및 지도)
+# 세션 상태 초기화 (페이지네이션 및 지도)
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 1
 if 'last_search_df' not in st.session_state:
     st.session_state.last_search_df = pd.DataFrame()
-# 🌟 지도 임베드 정보를 위한 세션 상태 추가
+# 지도 임베드 정보를 위한 세션 상태 추가
 if 'map_info' not in st.session_state:
     st.session_state.map_info = {'address': None, 'url': None}
+    
+# 검색 드롭다운 선택값을 위한 세션 상태 초기화 (AttributeError 방지)
+if 'area_select' not in st.session_state:
+    st.session_state.area_select = '전체'
+if 'district_select' not in st.session_state:
+    st.session_state.district_select = '전체'
 
 
 # --------------------
-# 5. 폐차장 조회 함수 (페이징 기능 추가)
+# 5. 폐차장 조회 함수 (콜백 함수를 사용하여 오류 해결)
 # --------------------
 def show_scrapyard_finder():
     """ 폐차장 조회 페이지 (지도 임베드 기능 통합) """
-    st.header ("📍수도권 폐차장 조회")
+    st.header ("🚙 수도권 폐차장 조회")
+    st.markdown(
+        """
+            <style>
+                .sub_title {
+                    margin: 0px;
+                }
+            </style>
+            <div class="sub_title">
+        """,
+        unsafe_allow_html=True
+    )
     st.write("원하는 지역과 세부 지역을 선택한 후 검색하세요.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 1, 0.5])
 
+    # 검색 조건을 세션 상태에 저장 (key를 사용해 st.session_state에 자동 저장됨)
     with col1:
-        selected_area = st.selectbox(
+        st.selectbox(
             "지역별 검색 (시/도)",
             ['전체', '서울', '경기', '인천'],
-            index = 0,
-            key="area_select"
+            index = ['전체', '서울', '경기', '인천'].index(st.session_state.area_select),
+            key="area_select" # 이 key로 st.session_state.area_select에 값이 저장됨
         )
     
     with col2:
-        detail_options = REGION_DETAILS.get(selected_area, ['전체'])
-        selected_district = st.selectbox(
-            f"'{selected_area}'의 세부 지역 검색 (구/시)",
+        # st.session_state.area_select의 값을 사용
+        detail_options = REGION_DETAILS.get(st.session_state.area_select, ['전체'])
+        st.selectbox(
+            f"'{st.session_state.area_select}'의 세부 지역 검색 (구/시)",
             detail_options,
-            index=detail_options.index('전체') if '전체' in detail_options else 0,
-            key="district_select"
+            index=detail_options.index(st.session_state.district_select) if st.session_state.district_select in detail_options else detail_options.index('전체'),
+            key="district_select" # 이 key로 st.session_state.district_select에 값이 저장됨
         )
 
-    # 검색 버튼
+    # 검색 버튼 (콜백 함수 사용)
     with col3:
-        if st.button("검색", use_container_width=True, key="search_button"):
-            # 검색 시 항상 첫 페이지로 초기화 및 지도 정보 삭제
-            st.session_state.current_page = 1
-            st.session_state.map_info = {'address': None, 'url': None}
+        st.markdown('<div class="blue-button">', unsafe_allow_html=True)
+        # '검색' 버튼 클릭 시 perform_search_and_reset 함수가 실행되고 st.rerun() 됨
+        st.button("검색", on_click=perform_search_and_reset, key="search_button_widget", use_container_width=True) 
+        st.markdown('</div>', unsafe_allow_html=True)    
         
-            # 🚨 DB 함수 호출 및 결과 저장
-            result_df = get_scrapyard_list_with_address(selected_area, selected_district)
-            st.session_state.last_search_df = result_df
+        # 검색 결과는 콜백 함수에서 이미 st.session_state.last_search_df에 저장했으므로, 
+        # 이 함수 외부에서는 검색 로직을 다시 실행하지 않습니다.
+                        
         
-            st.info(f"선택 지역: **{selected_area}** / **{selected_district}** 에 대한 폐차장 정보를 조회합니다.")
-
 
 # -----------------------------------------------------------------
-# 🌟 페이징 및 결과 출력 영역
+# 페이징 및 결과 출력 영역
 # -----------------------------------------------------------------
     
     if not st.session_state.last_search_df.empty:
@@ -196,8 +262,8 @@ def show_scrapyard_finder():
         page_size = 5
         total_pages = math.ceil(total_rows / page_size)
         current_page = st.session_state.current_page
-        
-        st.success(f"검색 조건에 맞는 폐차장 **{total_rows}** 건을 찾았습니다. (총 {total_pages} 페이지)")
+
+        st.subheader(f"🔍 조회 결과 (**{total_rows}**건)")
 
         # 현재 페이지에 해당하는 데이터 슬라이싱
         start_row = (current_page - 1) * page_size
@@ -205,16 +271,18 @@ def show_scrapyard_finder():
         paginated_df = result_df.iloc[start_row:end_row].copy()
 
 
-        # 🌟 결과 테이블 헤더 수동 생성
+        # 결과 테이블 헤더 수동 생성
         header_cols = st.columns([2.5, 3.5, 1.5, 1.5])
         header_cols[0].markdown('**업체명**')
         header_cols[1].markdown('**주소**')
         header_cols[2].markdown('**연락처**')
         header_cols[3].markdown('**지도**')
+        # st.dataframe(filtered[['업체명','주소','연락처','지도']])
+
         st.markdown('<hr class="header-divider"/>', unsafe_allow_html=True) # 헤더와 내용 구분선
 
         
-        # 🌟 결과 테이블 내용 수동 생성 (버튼 통합)
+        # 결과 테이블 내용 수동 생성 (버튼 통합)
         for index, row in paginated_df.iterrows():
             row_cols = st.columns([2.5, 3.5, 1.5, 1.5]) # 너비 비율은 헤더와 동일하게 유지
             
@@ -227,7 +295,7 @@ def show_scrapyard_finder():
             # 연락처
             row_cols[2].markdown(row['연락처'])
 
-            # 🌟 '지도 보기' 버튼 (버튼 클릭 시 지도 임베드)
+            # '지도 보기' 버튼 (버튼 클릭 시 지도 임베드)
             with row_cols[3]:
                 # 업체명 대신 '지도 보기' 버튼 클릭으로 임베드 기능 구현
                 if st.button("🗺️ 지도 보기", key=f"mapbtn{row['ID']}", use_container_width=True):
@@ -238,12 +306,13 @@ def show_scrapyard_finder():
             # 각 행의 중간 구분선 추가
             st.markdown('<hr class="row-divider"/>', unsafe_allow_html=True)
         
-        # 3. 페이지 이동 버튼 (기존과 동일)
+        # 3. 페이지 이동 버튼
         st.markdown("---")
         col_prev, col_page_info, col_next = st.columns([1, 2, 1])
         
         with col_prev:
             if current_page > 1:
+                # 이전 페이지 버튼 클릭 시 세션 상태 current_page만 변경
                 if st.button("⬅️ 이전 페이지"):
                     st.session_state.current_page -= 1
                     st.rerun()
@@ -253,13 +322,15 @@ def show_scrapyard_finder():
             
         with col_next:
             if current_page < total_pages:
+                # 다음 페이지 버튼 클릭 시 세션 상태 current_page만 변경
                 if st.button("다음 페이지 ➡️"):
                     st.session_state.current_page += 1
                     st.rerun()
 
     else:
-        # ... (결과 없음 로직)
-        pass
+        # 검색 결과가 없을 때 (초기 상태 포함)
+        st.info("검색 조건을 선택하고 '검색' 버튼을 눌러주세요.")
+
 
     # ------------------ 🌟 5-3. 지도 임베드 영역 (함수 마지막에 위치) ------------------
     if st.session_state.map_info['address']:
