@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 import streamlit as st
 import pandas as pd
 import urllib.parse
-import math
+import math, requests
 
 
 st.markdown("""
@@ -61,7 +61,7 @@ div[data-testid="stAlert"] div[role="alert"] {
 }
 </style>
 """, unsafe_allow_html=True)
-
+API_SCRAPYARD = "http://127.0.0.1:5000/scrapyards"
 
 # --------------------
 # 1. 카카오맵 URL 생성 함수 (상단에 정의)
@@ -97,23 +97,45 @@ REGION_DETAILS = {
 # 3. Mock Data (백엔드 대체 함수. 임의로 지정)
 # --------------------
 def get_scrapyard_list_with_address(selected_area, selected_district):
-    data = {
-        'ID': range(1, 82), 
-        '업체명': [f'{area} {dist} 폐차장 {i}' for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
-        '지역': [area for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
-        '세부지역': [dist for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
-        '주소': [f'{area} {dist} 주소 {i}' for area in ['서울', '경기', '인천'] for dist in ['강남구', '수원시', '부평구'] for i in range(1, 10)],
-        '연락처': [f'02-{i:03d}-xxxx' for i in range(1, 82)]
-    }
-    df = pd.DataFrame(data)
-    
-    # Mock 필터링 로직
-    if selected_area != '전체':
-        df = df[df['지역'] == selected_area]
-        if selected_district != '전체':
-             df = df[df['세부지역'] == selected_district]
-             
-    return df.reset_index(drop=True)
+    """
+    Flask API로 폐차장 데이터를 요청하여 DataFrame으로 반환
+    """
+    try:
+        # Streamlit → Flask 쿼리 파라미터로 전달
+        params = {}
+        if selected_area not in ("", "전체"):
+            # 백엔드에서는 'REGION_CODE'를 쓰기 때문에 변환 필요 (서울=02, 경기=01, 인천=11)
+            region_map = {"서울": "02", "경기": "01", "인천": "11"}
+            params["region"] = region_map.get(selected_area)
+        if selected_district not in ("", "전체"):
+            params["subregion"] = selected_district
+
+        # Flask로 GET 요청
+        response = requests.get(API_SCRAPYARD, params=params, timeout=5)
+        response.raise_for_status()
+
+        data = response.json()
+        if not data:
+            st.warning("조건에 맞는 폐차장 데이터가 없습니다.")
+            return pd.DataFrame()
+
+        # JSON → DataFrame
+        df = pd.DataFrame(data)
+
+        # 컬럼 이름 변경 (UI 표시에 맞게)
+        df.rename(columns={
+            "SY_NAME": "업체명",
+            "ADDRESS": "주소",
+            "CONTACT_NUMBER": "연락처",
+            "REGION_CODE": "지역코드",
+            "SUBREGION_NAME": "세부지역"
+        }, inplace=True)
+
+        return df
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"🚨 Flask 서버 통신 오류: {e}")
+        return pd.DataFrame()
 
 
 # ----------------------------------------------------

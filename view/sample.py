@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 
-API_ENDPOINT = 'http://127.0.0.1:5000/'
+API_ENDPOINT = 'http://127.0.0.1:5000/faqs'
 
 @st.cache_data
 def load_data():
@@ -16,16 +16,16 @@ def load_data():
 
 st.title("FAQ") # FAQ 페이지 제목
 
-faq_data = load_data()
-if not faq_data:
+faq_info = load_data()
+if not faq_info:
     st.info("FAQ 데이터를 불러오지 못했습니다.")
     st.stop()
 
-df = pd.DataFrame(faq_data)
+df = pd.DataFrame(faq_info)
 
 # 기대되는 필드가 question, answer인 경우
 for _, row in df.iterrows():
-    q = str(row.get("question", "No question"))
-    a = str(row.get("answer", "No answer"))
+    q = str(row.get("QUESTION", "No question"))
+    a = str(row.get("ANSWER", "No answer"))
     with st.expander(q):
         st.markdown(a)

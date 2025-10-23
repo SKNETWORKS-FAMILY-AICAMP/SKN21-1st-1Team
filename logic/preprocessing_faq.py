@@ -16,11 +16,11 @@ app.config['JSON_AS_ASCII'] = False
 def get_db_connection():
     try:
         mydb = mysql.connector.connect(  # 얘네는 MYSQL 사용자 정보이기에 바꾸셔야해요
-            host="127.0.0.1",
+            host="localhost",
             port=3306,
-            user="joshua",  
-            password="1111",
-            database="faq_db",  
+            user="root",  
+            password="1234",
+            database="testdb",  
             charset='utf8mb4'
         )
         print("MySQL 연결 성공")
@@ -31,7 +31,7 @@ def get_db_connection():
 
 # CSV 파일에서 데이터를 읽어 MySQL 데이터베이스에 삽입하는 함수
 def load_data_from_csv_to_mysql():
-    file_path = 'C:/Users/juwon/OneDrive/Desktop/sk1/SKN21-1st-1Team/FAQ.csv' # FAQ.CSV 파일 경로
+    file_path = 'C:\project\project\logic\FAQ.csv' # FAQ.CSV 파일 경로
     mydb = None
     mycursor = None
     try:
