@@ -1,7 +1,7 @@
 """
 Author: 문지영 / 신지용 (병합)
 Date: 2025-10-24 (최종 수정일)
-Description: 폐차장 조회/FAQ/실적 데이터 통합 화면 (API 기반 회원관리 기능 통합)
+Description: 폐차장 조회/FAQ/실적 데이터 통합 화면 (로그인 기능 제거 버전)
 """
 
 import streamlit.components.v1 as components 
@@ -24,10 +24,7 @@ API_BASE_URL = "http://127.0.0.1:5000"
 API_SCRAPYARD = f"{API_BASE_URL}/scrapyards"
 API_FAQ_URL = f"{API_BASE_URL}/faqs"
 API_SUBREGIONS_URL = f"{API_BASE_URL}/subregions" 
-# [추가] 회원관리 API
-API_LOGIN_URL = f"{API_BASE_URL}/login"
-API_REGISTER_URL = f"{API_BASE_URL}/register"
-API_WITHDRAW_URL = f"{API_BASE_URL}/withdraw"
+# [삭제] 회원관리 API 관련 URL 제거
 
 REGION_CODE_MAP = {"서울": "02", "경기": "01", "인천": "11"}   # 지역명 <-> 지역코드 변환 맵
 
@@ -40,102 +37,20 @@ MENU_ITEMS_WITH_EMOJI = [
 ]
 
 # -----------------------------------------------------------------
-# 🌟 2. 회원관리 API 호출 함수
+# 🌟 2. [삭제] 회원관리 API 호출 함수
 # -----------------------------------------------------------------
-
-def handle_api_login(username, password):
-    """백엔드 API로 로그인을 시도합니다."""
-    try:
-        response = requests.post(API_LOGIN_URL, json={"username": username, "password": password})
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        return {"success": False, "message": f"서버 연결 오류: {e}"}
-
-def handle_api_register(username, password):
-    """백엔드 API로 회원가입을 시도합니다."""
-    try:
-        response = requests.post(API_REGISTER_URL, json={"username": username, "password": password})
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        return {"success": False, "message": f"서버 연결 오류: {e}"}
-
-
-
-# def handle_api_withdraw(username, password): 나중에 구현할거임!!!!
-#     """백엔드 API로 회원탈퇴를 시도합니다."""
-#     try:
-#         response = requests.post(API_WITHDRAW_URL, json={"username": username, "password": password})
-#         return response.json()
-#     except requests.exceptions.RequestException as e:
-#         return {"success": False, "message": f"서버 연결 오류: {e}"}
+# handle_api_login, handle_api_register, handle_api_withdraw 함수 모두 제거
 
 # -----------------------------------------------------------------
-# 🌟 3. 로그인/회원가입 페이지
+# 🌟 3. [삭제] 로그인/회원가입 페이지
 # -----------------------------------------------------------------
-
-def show_login_page():
-    """로그인 및 회원가입 UI를 탭으로 표시합니다."""
-    st.set_page_config(
-        page_title="로그인",
-        page_icon="🔒",
-        layout="centered"
-    )
-    st.title("🔒 수도권 폐차 정보 통합 시스템")
-
-    tab1, tab2 = st.tabs(["로그인", "회원가입"])
-
-    # --- 로그인 탭 ---
-    with tab1:
-        st.subheader("로그인")
-        with st.form("login_form"):
-            login_username = st.text_input("아이디 (Username)", key="login_user")
-            login_password = st.text_input("비밀번호 (Password)", type="password", key="login_pass")
-            login_submitted = st.form_submit_button("로그인")
-
-            if login_submitted:
-                if not login_username or not login_password:
-                    st.error("아이디와 비밀번호를 모두 입력하세요.")
-                else:
-                    result = handle_api_login(login_username, login_password)
-                    if result.get("success"):
-                        st.session_state.logged_in = True
-                        st.session_state.username = login_username
-                        st.session_state.show_welcome_popup = True 
-                        st.rerun()
-                    else:
-                        st.error(result.get("message", "로그인에 실패했습니다."))
-
-    # --- 회원가입 탭 ---
-    with tab2:
-        st.subheader("회원가입")
-        with st.form("register_form"):
-            reg_username = st.text_input("사용할 아이디", key="reg_user")
-            reg_password = st.text_input("사용할 비밀번호", type="password", key="reg_pass")
-            reg_password_confirm = st.text_input("비밀번호 확인", type="password", key="reg_pass_confirm")
-            reg_submitted = st.form_submit_button("가입하기")
-
-            if reg_submitted:
-                if not reg_username or not reg_password or not reg_password_confirm:
-                    st.error("모든 항목을 입력하세요.")
-                elif reg_password != reg_password_confirm:
-                    st.error("비밀번호가 일치하지 않습니다.")
-                else:
-                    result = handle_api_register(reg_username, reg_password)
-                    if result.get("success"):
-                        # ❗️ [조건 1] 회원가입 성공 시 자동 로그인
-                        st.session_state.logged_in = True
-                        st.session_state.username = reg_username
-                        st.session_state.show_welcome_popup = True
-                        st.rerun() # 메인 화면으로 즉시 이동
-                    else:
-                        st.error(result.get("message", "회원가입에 실패했습니다."))
-
+# show_login_page 함수 모두 제거
 
 # -----------------------------------------------------------------
 # 🌟 4. 메인 애플리케이션
 # -----------------------------------------------------------------
 def show_main_app():
-    """로그인 성공 시, 기존의 메인 애플리케이션을 표시합니다."""
+    """메인 애플리케이션을 표시합니다."""
 
     # 0. 페이지 설정
     st.set_page_config(
@@ -145,21 +60,8 @@ def show_main_app():
         initial_sidebar_state="expanded"
     )
     
-    # ❗️ [조건 1] 환영 팝업 (가장 먼저 실행)
-    if st.session_state.show_welcome_popup:
-        username = st.session_state.get("username", "사용자")
-        st.success(f"🎉 환영합니다, {username} 님! 좋은 하루 되세요~", icon="👋")
-        st.balloons()
-        # 팝업은 한 번만 띄우도록 상태 변경
-        st.session_state.show_welcome_popup = False
-
-
-    # ❗️ [조건 2] 로그아웃 버튼 (사이드바 최상단)
-    if st.sidebar.button("로그아웃 🔒", key="logout_btn_top", use_container_width=True):
-        st.session_state.logged_in = False
-        st.session_state.username = None 
-        st.session_state.show_welcome_popup = False # 팝업 상태 초기화
-        st.rerun() 
+    # ❗️ [삭제] 환영 팝업 로직 제거
+    # ❗️ [삭제] 로그아웃 버튼 로직 제거
 
     # --- 기존 CSS (search.py) ---
     st.markdown("""
@@ -199,22 +101,7 @@ def show_main_app():
         border: 1px solid #1158e0 !important;
         font-weight: bold;
     }
-    /* ❗️ [조건 2] 로그아웃 버튼 스타일 (상단에 배치되므로 다른 버튼과 스타일 통일) */
-    [data-testid="stSidebar"] div.stButton > button[key="logout_btn_top"] {
-        width: 100%; 
-        margin-bottom: 15px; /* 제목과 간격 띄우기 */
-        text-align: left; 
-        font-weight: bold;
-        padding: 8px 10px; 
-        margin-top: 5px;
-        color: #31333f;
-        background-color: #f0f2f6;
-        border: 1px solid #d3d3d3;
-    }
-    [data-testid="stSidebar"] div.stButton > button[key="logout_btn_top"]:hover {
-        color: white !important;
-        background-color: #1158e0 !important;
-    }
+    /* ❗️ [삭제] 로그아웃 버튼 관련 CSS 제거 */
                 
     /* ----------------- 경고/정보 스타일 ----------------- */
     div[data-testid="stAlert"] div[role="alert"] {
@@ -590,14 +477,21 @@ def show_main_app():
     def show_performance_data():
         """ 실적 데이터 조회 및 시각화 페이지 """
         
-        # ❗️ [경로 수정] 요청하신 대로 "view/data"로 수정
+        # ❗️ [경로 수정] search.py와 data 폴더가 같은 view 폴더 안에 있으므로 ./data로 변경
         DATA_DIR = "./data" 
 
         # 1. JSON 파일 목록 정의
         json_files = []
         try:
+            # os.listdir이 상대 경로를 올바르게 인식하도록 합니다.
+            if not os.path.isdir(DATA_DIR):
+                st.error(f"❌ '{DATA_DIR}' 폴더를 찾을 수 없습니다. (현재 작업 경로: {os.getcwd()})")
+                st.error("search.py가 있는 view 폴더 내에 data 폴더가 있는지 확인해주세요.")
+                return
+
             json_files = [f for f in os.listdir(DATA_DIR) if f.endswith(".json")]
             json_files.sort()
+            
         except FileNotFoundError:
             st.error(f"❌ '{DATA_DIR}' 폴더를 찾을 수 없습니다. JSON 파일을 이 폴더에 넣어주세요.")
             return
@@ -673,7 +567,7 @@ def show_main_app():
 
 
     # --- 뉴스 카드 표시 함수 (show_news_cards) (search.py) ---
-    def show_news_cards(csv_file_path="google_news_limited.csv"):
+    def show_news_cards(csv_file_path="google_news_limited.csv"): # ❗️ 파일 이름 확인
         """
         Streamlit에서 카드뉴스를 CSV 기반으로 표시하는 함수
         """
@@ -740,7 +634,9 @@ def show_main_app():
             st.components.v1.html(html_content, height=800, scrolling=True)
 
         except FileNotFoundError:
-            st.error(f"CSV 파일 '{csv_file_path}'을(를) 찾을 수 없습니다.")
+            st.error(f"❌ CSV 파일 '{csv_file_path}'을(를) 찾을 수 없습니다.")
+            st.error(f"(현재 작업 경로: {os.getcwd()})")
+            st.error(f"search.py가 있는 폴더({os.path.dirname(__file__)})에 파일이 있는지 확인하세요.")
         except Exception as e:
             st.error(f"뉴스 카드 표시 중 오류 발생: {e}")
 
@@ -860,32 +756,7 @@ def show_main_app():
         # (이 부분은 그대로 둡니다)
         show_news_cards()
     
-    # ❗️ [조건 3] 회원탈퇴 버튼 (사이드바 최하단) 나중에 구현할거임!!!!!
-    # 다른 모든 사이드바 요소가 추가된 후 마지막에 배치
-    # st.sidebar.write("---") # 구분선
-    # with st.sidebar.expander("회원탈퇴 ⚠️"):
-    #     st.warning("회원탈퇴 시 복구할 수 없습니다.")
-    #     withdraw_password = st.text_input("비밀번호 확인", type="password", key="withdraw_pass")
-        
-    #     # 회원탈퇴 버튼은 빨간색(primary)으로 강조
-    #     st.markdown('<style>div[data-testid="stButton"] > button[kind="primary"] { background-color: #d93025; color: white; border-color: #d93025; }</style>', unsafe_allow_html=True)
-        
-    #     if st.button("회원탈퇴 실행", type="primary", key="withdraw_btn_bottom"):
-    #         if not withdraw_password:
-    #             st.error("비밀번호를 입력하세요.")
-    #         else:
-    #             current_username = st.session_state.get("username")
-    #             result = handle_api_withdraw(current_username, withdraw_password)
-                
-    #             if result.get("success"):
-    #                 st.success(result.get("message", "회원탈퇴 성공"))
-    #                 # 세션 초기화 및 로그아웃
-    #                 st.session_state.logged_in = False
-    #                 st.session_state.username = None
-    #                 st.session_state.show_welcome_popup = False
-    #                 st.rerun() # 즉시 로그인 페이지로 이동
-    #             else:
-    #                 st.error(result.get("message", "회원탈N퇴 실패. 비밀번호를 확인하세요."))
+    # ❗️ [삭제] 회원탈퇴 버튼 로직 제거
 
 
 # -----------------------------------------------------------------
@@ -893,13 +764,8 @@ def show_main_app():
 # -----------------------------------------------------------------
 
 # --- 세션 상태 키 초기화 ---
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "show_welcome_popup" not in st.session_state:
-    st.session_state.show_welcome_popup = False
-if "username" not in st.session_state:
-    st.session_state.username = None 
-# [추가] 메인 앱 세션 상태 초기화 (로그인 시 필요)
+# ❗️ [삭제] 로그인 관련 세션 상태('logged_in', 'show_welcome_popup', 'username') 초기화 제거
+# [유지] 메인 앱 세션 상태 초기화
 if 'menu_selection' not in st.session_state:
     st.session_state.menu_selection = '홈'
 if 'current_page' not in st.session_state:
@@ -915,7 +781,5 @@ if 'district_select' not in st.session_state:
 
 
 # --- 로그인 상태에 따라 다른 화면 표시 ---
-if st.session_state.logged_in:
-    show_main_app()  # 로그인 O -> 메인 앱 표시
-else:
-    show_login_page() # 로그인 X -> 로그인/회원가입 폼 표시
+# ❗️ [수정] 로그인 라우터를 제거하고 메인 앱을 바로 실행합니다.
+show_main_app()
