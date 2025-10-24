@@ -18,6 +18,9 @@ from pathlib import Path
 API_BASE_URL = "http://127.0.0.1:5000"
 API_SCRAPYARD = f"{API_BASE_URL}/scrapyards"
 API_FAQ_URL = f"{API_BASE_URL}/faqs"
+API_SUBREGIONS_URL = f"{API_BASE_URL}/subregions" # 💡 [추가]
+# 💡 [추가] 지역명 <-> 지역코드 변환 맵 (전역 변수로)
+REGION_CODE_MAP = {"서울": "02", "경기": "01", "인천": "11"}
 
 st.markdown("""
 
@@ -93,7 +96,22 @@ def load_faq_from_api(url: str = API_FAQ_URL, timeout: int = 5):
         return resp.json()
     except requests.exceptions.RequestException:
         return []
-
+@st.cache_data
+def load_subregions_from_api(region_code: str, timeout: int = 5):
+    """선택한 시/도에 해당하는 시/군/구 목록을 Flask API로부터 받아옵니다."""
+    if not region_code:
+        # '전체'를 선택했거나 맵에 없는 값이면 (region_code=None) 빈 리스트 반환
+        return [] 
+    
+    try:
+        params = {"region": region_code}
+        resp = requests.get(API_SUBREGIONS_URL, params=params, timeout=timeout)
+        resp.raise_for_status()
+        # API는 ['강남구', '성동구', ...] 형태의 JSON 리스트를 반환
+        return resp.json() 
+    except requests.exceptions.RequestException as e:
+        st.error(f"세부 지역 목록 로딩 실패: {e}")
+        return []
 def normalize_faq_list(data):
     if not isinstance(data, list):
         if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
@@ -130,16 +148,16 @@ def get_kakao_map_iframe_url(address):
 # --------------------
 # 지역별 세부 구/시 데이터 정의 (전역 변수 위치. 임의로 지정.)
 # --------------------
-SEOUL_DISTRICTS = ['강남구', '성북구', '성동구', '영등포구', '전체']
-GYEONGGI_CITIES = ['수원시', '성남시', '용인시', '화성시', '전체']
-INCHEON_DISTRICTS = ['연수구', '남동구', '부평구', '서구', '전체']
+# SEOUL_DISTRICTS = ['강남구', '성북구', '성동구', '영등포구', '전체']
+# GYEONGGI_CITIES = ['수원시', '성남시', '용인시', '화성시', '전체']
+# INCHEON_DISTRICTS = ['연수구', '남동구', '부평구', '서구', '전체']
 
-REGION_DETAILS = {
-    '서울': SEOUL_DISTRICTS,
-    '경기': GYEONGGI_CITIES,
-    '인천': INCHEON_DISTRICTS,
-    '전체': ['전체']
-}
+# REGION_DETAILS = {
+#     '서울': SEOUL_DISTRICTS,
+#     '경기': GYEONGGI_CITIES,
+#     '인천': INCHEON_DISTRICTS,
+#     '전체': ['전체']
+# }
 
 # --------------------
 # 3. Mock Data (백엔드 대체 함수. 임의로 지정)
@@ -152,9 +170,8 @@ def get_scrapyard_list_with_address(selected_area, selected_district):
         # Streamlit → Flask 쿼리 파라미터로 전달
         params = {}
         if selected_area not in ("", "전체"):
-            # 백엔드에서는 'REGION_CODE'를 쓰기 때문에 변환 필요 (서울=02, 경기=01, 인천=11)
-            region_map = {"서울": "02", "경기": "01", "인천": "11"}
-            params["region"] = region_map.get(selected_area)
+            # 💡 전역 맵(REGION_CODE_MAP) 사용
+            params["region"] = REGION_CODE_MAP.get(selected_area) 
         if selected_district not in ("", "전체"):
             params["subregion"] = selected_district
 
@@ -245,31 +262,46 @@ def show_scrapyard_finder():
     """ 폐차장 조회 페이지 (지도 임베드 기능 통합) """
     st.header ("🚙 수도권 폐차장 조회")
     
-    # 기존 코드에서 발견된 불필요한 HTML 마크다운 제거 (st.write로 대체)
     st.write("원하는 지역과 세부 지역을 선택한 후 검색하세요.")
 
-    # col3의 비율을 0.4로 유지하며 버튼이 한 줄로 나오도록 합니다.
     col1, col2, col3 = st.columns([1, 1, 0.4])
 
-    # 검색 조건을 세션 상태에 저장 (key를 사용해 st.session_state에 자동 저장됨)
+    # 검색 조건을 세션 상태에 저장
     with col1:
+        # 💡 [수정] 시/도 변경 시, 세부 지역을 '전체'로 리셋하는 on_change 콜백 추가
         st.selectbox(
             "지역별 검색 (시/도)",
             ['전체', '서울', '경기', '인천'],
             index = ['전체', '서울', '경기', '인천'].index(st.session_state.area_select),
-            key="area_select" # 이 key로 st.session_state.area_select에 값이 저장됨
+            key="area_select",
+            on_change=lambda: st.session_state.update(district_select='전체')
         )
     
+    # 💡 [수정] API를 통해 세부 지역 목록 동적 로드
+    selected_region_name = st.session_state.area_select
+    selected_region_code = REGION_CODE_MAP.get(selected_region_name) # e.g., '02' or None
+    
+    # API 호출 (캐시되어 있으므로 빠름)
+    detail_options_from_db = load_subregions_from_api(selected_region_code) 
+    
+    # DB에서 가져온 목록 앞에 항상 '전체' 옵션을 추가
+    detail_options = ['전체'] + detail_options_from_db
+
     with col2:
-        # st.session_state.area_select의 값을 사용
-        detail_options = REGION_DETAILS.get(st.session_state.area_select, ['전체'])
+        # 💡 [삭제] detail_options = REGION_DETAILS.get(st.session_state.area_select, ['전체'])
+
+        # 💡 [추가] 시/도를 변경했을 때, 이전에 선택한 세부 지역이 새 목록에 없으면 '전체'로 강제 리셋
+        current_district = st.session_state.district_select
+        if current_district not in detail_options:
+            current_district = '전체'
+            st.session_state.district_select = '전체' # 세션 상태도 '전체'로 업데이트
+        
         st.selectbox(
             f"'{st.session_state.area_select}'의 세부 지역 검색 (구/시)",
-            detail_options,
-            index=detail_options.index(st.session_state.district_select) if st.session_state.district_select in detail_options else detail_options.index('전체'),
-            key="district_select" # 이 key로 st.session_state.district_district에 값이 저장됨
+            detail_options, # 💡 API로 받아온 동적 목록 사용
+            index=detail_options.index(current_district),
+            key="district_select"
         )
-
     # 검색 버튼 (콜백 함수 사용)
     with col3:
         st.markdown('<div class="blue-button">', unsafe_allow_html=True)
@@ -326,7 +358,7 @@ def show_scrapyard_finder():
 
             # '지도 보기' 버튼 (버튼 클릭 시 지도 임베드)
             with row_cols[3]:
-                if st.button("🗺️ 지도 보기", key=f"mapbtn{row['ID']}", use_container_width=True):
+                if st.button("🗺️ 지도 보기", key=f"mapbtn{row['SY_ID']}", use_container_width=True):
                     st.session_state.map_info['address'] = row['주소']
                     st.session_state.map_info['url'] = get_kakao_map_iframe_url(row['주소'])
                     st.rerun()
