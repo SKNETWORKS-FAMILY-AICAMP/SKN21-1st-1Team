@@ -143,10 +143,6 @@ def home():
                     <strong>회원가입:</strong> 
                     <code> /register</code> (POST)
                 </li>
-                <li>
-                    <strong>회원탈퇴:</strong> 
-                    <code> /withdraw</code> (POST)
-                </li>
             </ul>
         </div>
     </body>

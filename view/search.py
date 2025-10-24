@@ -15,6 +15,9 @@ import json
 import os
 from io import BytesIO
 
+# 이 파일(search.py)이 있는 폴더(view)의 경로를 기준으로 삼습니다.
+BASE_DIR = Path(__file__).resolve().parent
+
 # -----------------------------------------------------------------
 # 🌟 1. 설정 (상수)
 # -----------------------------------------------------------------
@@ -222,7 +225,10 @@ def show_main_app():
         padding-top: 15px;
         padding-bottom: 15px;
     }
-    /* ... (이하 CSS 동일) ... */
+                
+    .stVerticalBlock .st-emotion-cache-wfksaw.e196pkbe2 {
+    align-items: center;
+}     
     </style>
     """, unsafe_allow_html=True)
 
@@ -501,7 +507,6 @@ def show_main_app():
 
     # --- FAQ 시스템 함수 (show_faq_system) (search.py) ---
     def show_faq_system():
-        # (기존 search.py와 동일한 내용)
         st.header("❓ 폐차 관련 자주 묻는 질문 (FAQ)")
         st.write("자주 묻는 질문 목록입니다. 질문을 클릭하시면 답변을 확인할 수 있습니다.")
 
@@ -520,7 +525,56 @@ def show_main_app():
             return
 
         df = pd.DataFrame(faq_list)
-        for i, row in df.iterrows():
+
+        # 검색창과 버튼을 같은 행에 배치하여 수평 정렬
+        col1, col2 = st.columns([0.82, 0.18])
+        with col1:
+            query = st.text_input("", placeholder="검색어를 입력하세요").strip()
+        with col2:
+            # 버튼 스타일 적용 (색상 #1158e0, 흰 글자, 높이 등)
+            st.markdown(
+                """
+        <style>
+        /* 이 블록 내부(div id="search-btn-area")에 있는 Streamlit 버튼만 스타일링 */
+        #search-btn-area .stButton>button {
+            background-color: #1158e0 !important;
+            color: #ffffff !important;
+            height: 44px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        #search-btn-area .stButton>button:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        </style>
+        <div id="search-btn-area"></div>
+        """,
+                unsafe_allow_html=True,
+            )
+            search_clicked = st.button("검색", key="search_button")
+
+        # 검색 실행 조건
+        filtered = df
+        if (search_clicked if 'search_clicked' in locals() else False) or query:
+            q_lower = query.lower()
+            mask = (
+                df.get("Q", "").astype(str).str.lower().str.contains(q_lower, na=False)
+                | df.get("A", "").astype(str).str.lower().str.contains(q_lower, na=False)
+                | df.get("출처", "").astype(str).str.lower().str.contains(q_lower, na=False)
+            )
+            filtered = df[mask]
+            if filtered.empty:
+                st.info(f"'{query}'(을)를 포함하는 FAQ 항목이 없습니다.")
+                return
+
+        st.write("")
+        st.write("---")
+        st.write("")
+
+        for i, row in filtered.reset_index(drop=True).iterrows():
             q = row.get("Q", "")
             a = row.get("A", "")
             src = row.get("출처", "")
@@ -528,6 +582,12 @@ def show_main_app():
                 st.markdown(a)
                 if src:
                     st.caption(f"출처: {src}")
+                st.write("")
+            st.write("")
+
+        # 메인 라우팅 위까지만
+
+        # 메인 라우팅 위까지만
 
 
     # --- 실적 데이터 유틸리티 함수 (search.py) ---
