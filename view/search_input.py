@@ -10,7 +10,6 @@ import pandas as pd
 import urllib.parse
 import math, requests
 
-
 st.markdown("""
 
 <style>
@@ -152,7 +151,6 @@ def perform_search_and_reset():
     st.session_state.last_search_df = result_df
 
 
-
 # 1. 페이지 설정 (기존과 동일)
 st.set_page_config(
     page_title="수도권 폐차장 조회 및 FAQ 시스템",
@@ -161,20 +159,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-
 # 2. 사이드바 메뉴 구현 (key 추가로 DuplicateElementId 오류 해결)
 st.sidebar.title("⚙️ 시스템 메뉴")
 menu = st.sidebar.radio(" ",
-    ('폐차장 조회', 'FAQ 검색 시스템'),
+    ('폐차장 조회', '폐차 절차', 'FAQ 검색 시스템', '폐차 통계'),
     key='sidebar_menu' # <-- key 추가
 )
-
 
 # 세션 상태 초기화 (페이지네이션 및 지도)
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 1
 if 'last_search_df' not in st.session_state:
     st.session_state.last_search_df = pd.DataFrame()
+    
 # 지도 임베드 정보를 위한 세션 상태 추가
 if 'map_info' not in st.session_state:
     st.session_state.map_info = {'address': None, 'url': None}
@@ -363,6 +360,15 @@ def show_faq_system():
                 st.caption(f"**출처:** {item['출처']}")
     else:
         st.warning("현재 제공 가능한 FAQ 목록이 없습니다.")
+        
+
+# 폐차 절차 함수
+def show_scraped_process():
+    pass
+
+
+def show_scraped_vechecle():
+    pass
 
 
 # 4. 메인 라우팅 (기존과 동일)
@@ -370,3 +376,7 @@ if menu == '폐차장 조회':
     show_scrapyard_finder()
 elif menu == 'FAQ 검색 시스템':
     show_faq_system()
+elif menu == '페차 절차' :
+    show_scraped_process()
+elif menu == '폐차 통계' :
+    show_scraped_vechecle()
