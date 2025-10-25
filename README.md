@@ -110,6 +110,40 @@
 ## 프로젝트 구조
 <img src="image/flow.png" alt="flow" width="auto">
 
+본 프로젝트는 데이터 사전 처리 단계와 실시간 조회 서비스 단계로 구성됩니다.
+
+1. 데이터 사전 처리 (Pre-processing)
+애플리케이션 서버가 실행되기 전, 사용자에게 제공할 데이터를 미리 준비하는 단계입니다.
+
+데이터 수집: Python을 이용해 필요한 원본 데이터를 크롤링합니다.
+
+데이터 저장 (1차): 수집된 데이터를 CSV 파일 형태로 로컬에 저장합니다.
+
+데이터베이스 적재 (Pre-load): 저장된 CSV 파일을 가공하여 메인 데이터베이스MySQL에 삽입(Insert)합니다. 이 과정을 통해 서버는 항상 정제된 최신 데이터를 기준으로 실행을 시작합니다.
+
+2. 실시간 조회 서비스 (Runtime Flow)
+사용자가 시스템을 이용하는 실제 동작 흐름입니다. 프론트엔드(Streamlit)와 백엔드(Flask)가 명확히 분리되어 동작합니다.
+
+① 사용자 인증: 사용자는 Streamlit(프론트엔드) 화면을 통해 시스템에 로그인합니다.
+
+② 데이터 요청 (Front → Back): 사용자가 특정 데이터를 조회하면, Streamlit은 조회에 필요한 파라미터(검색어, 조건 등)를 JSON 형식으로 구성하여 Flask(백엔드) API 서버에 전송(Request)합니다.
+
+③ 백엔드 처리 (Back-end Logic):
+
+Flask 서버는 수신한 JSON 데이터를 파싱(Parsing)합니다.
+
+파싱된 파라미터를 기반으로 적절한 SQL 쿼리문을 생성합니다.
+
+생성된 SQL을 데이터베이스(DB)로 전송하여 실시간으로 데이터를 조회합니다.
+
+④ 데이터 응답 (Back → Front):
+
+DB로부터 조회된 결과값을 다시 JSON 형식으로 가공합니다.
+
+이 JSON 데이터를 Streamlit(프론트엔드) 측에 응답(Response)으로 전송합니다.
+
+⑤ 결과 표시: Streamlit은 백엔드로부터 받은 JSON 데이터를 이용해 사용자 화면에 조회 결과를 동적으로 표시합니다.
+
 ## 데이터베이스 구조
 <img src="image/erd.png" alt="ERD" width="auto">
 
@@ -165,6 +199,7 @@ https://www.kadra.or.kr/kadra/contents/main/main.html
 ### 학습/팀 성과
 - 공공데이터 + 크롤링 + DB + 시각화 프로젝트 경험
 - Python, MySQL, Streamlit, Web Crawling 등 학습 내용을 종합 적용
+- Flask 기반의 백엔드 API 서버를 구축, 사용자 요청에 따라 DB와 실시간으로 연동하여 최신화된 데이터를 JSON 형태로 제공하도록 구현.
 - GitHub 협업과 DB 실습을 통한 실무 능력 강화
 
 ## 추가 구현하고 싶은 기능
