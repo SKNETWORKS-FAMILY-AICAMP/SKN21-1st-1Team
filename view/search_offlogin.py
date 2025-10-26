@@ -1,9 +1,12 @@
 """
 Author: 문지영 / 신지용 (병합)
 Date: 2025-10-24 (최종 수정일)
-Description: 폐차장 조회/FAQ/실적 데이터 통합 화면 (로그인 기능 제거 버전)
+Description: 폐차장 조회/FAQ/실적 데이터 통합 화면 (API 기반 회원관리 기능 통합)
 """
-
+import sys
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(PROJECT_ROOT)) 
 import streamlit.components.v1 as components 
 import plotly.express as px
 from pathlib import Path
@@ -14,6 +17,9 @@ import math, requests
 import json
 import os
 from io import BytesIO
+from utils.path_manager import NEWS_CSV
+# 이 파일(search.py)이 있는 폴더(view)의 경로를 기준으로 삼습니다.
+# BASE_DIR = Path(__file__).resolve().parent
 
 # -----------------------------------------------------------------
 # 🌟 1. 설정 (상수)
@@ -24,7 +30,10 @@ API_BASE_URL = "http://127.0.0.1:5000"
 API_SCRAPYARD = f"{API_BASE_URL}/scrapyards"
 API_FAQ_URL = f"{API_BASE_URL}/faqs"
 API_SUBREGIONS_URL = f"{API_BASE_URL}/subregions" 
-# [삭제] 회원관리 API 관련 URL 제거
+# [추가] 회원관리 API
+API_LOGIN_URL = f"{API_BASE_URL}/login"
+API_REGISTER_URL = f"{API_BASE_URL}/register"
+API_WITHDRAW_URL = f"{API_BASE_URL}/withdraw"
 
 REGION_CODE_MAP = {"서울": "02", "경기": "01", "인천": "11"}   # 지역명 <-> 지역코드 변환 맵
 
@@ -36,21 +45,13 @@ MENU_ITEMS_WITH_EMOJI = [
     ('📰 카드뉴스', '카드뉴스')
 ]
 
-# -----------------------------------------------------------------
-# 🌟 2. [삭제] 회원관리 API 호출 함수
-# -----------------------------------------------------------------
-# handle_api_login, handle_api_register, handle_api_withdraw 함수 모두 제거
 
-# -----------------------------------------------------------------
-# 🌟 3. [삭제] 로그인/회원가입 페이지
-# -----------------------------------------------------------------
-# show_login_page 함수 모두 제거
 
 # -----------------------------------------------------------------
 # 🌟 4. 메인 애플리케이션
 # -----------------------------------------------------------------
 def show_main_app():
-    """메인 애플리케이션을 표시합니다."""
+    """로그인 성공 시, 기존의 메인 애플리케이션을 표시합니다."""
 
     # 0. 페이지 설정
     st.set_page_config(
@@ -60,8 +61,21 @@ def show_main_app():
         initial_sidebar_state="expanded"
     )
     
-    # ❗️ [삭제] 환영 팝업 로직 제거
-    # ❗️ [삭제] 로그아웃 버튼 로직 제거
+    # ❗️ [조건 1] 환영 팝업 (가장 먼저 실행)
+    if st.session_state.show_welcome_popup:
+        username = st.session_state.get("username", "사용자")
+        st.success(f"🎉 환영합니다, {username} 님! 좋은 하루 되세요~", icon="👋")
+        st.balloons()
+        # 팝업은 한 번만 띄우도록 상태 변경
+        st.session_state.show_welcome_popup = False
+
+
+    # ❗️ [조건 2] 로그아웃 버튼 (사이드바 최상단)
+    if st.sidebar.button("로그아웃 🔒", key="logout_btn_top", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.username = None 
+        st.session_state.show_welcome_popup = False # 팝업 상태 초기화
+        st.rerun() 
 
     # --- 기존 CSS (search.py) ---
     st.markdown("""
@@ -101,7 +115,22 @@ def show_main_app():
         border: 1px solid #1158e0 !important;
         font-weight: bold;
     }
-    /* ❗️ [삭제] 로그아웃 버튼 관련 CSS 제거 */
+    /* ❗️ [조건 2] 로그아웃 버튼 스타일 (상단에 배치되므로 다른 버튼과 스타일 통일) */
+    [data-testid="stSidebar"] div.stButton > button[key="logout_btn_top"] {
+        width: 100%; 
+        margin-bottom: 15px; /* 제목과 간격 띄우기 */
+        text-align: left; 
+        font-weight: bold;
+        padding: 8px 10px; 
+        margin-top: 5px;
+        color: #31333f;
+        background-color: #f0f2f6;
+        border: 1px solid #d3d3d3;
+    }
+    [data-testid="stSidebar"] div.stButton > button[key="logout_btn_top"]:hover {
+        color: white !important;
+        background-color: #1158e0 !important;
+    }
                 
     /* ----------------- 경고/정보 스타일 ----------------- */
     div[data-testid="stAlert"] div[role="alert"] {
@@ -109,7 +138,10 @@ def show_main_app():
         padding-top: 15px;
         padding-bottom: 15px;
     }
-    /* ... (이하 CSS 동일) ... */
+                
+    .stVerticalBlock .st-emotion-cache-wfksaw.e196pkbe2 {
+    align-items: center;
+}     
     </style>
     """, unsafe_allow_html=True)
 
@@ -388,7 +420,6 @@ def show_main_app():
 
     # --- FAQ 시스템 함수 (show_faq_system) (search.py) ---
     def show_faq_system():
-        # (기존 search.py와 동일한 내용)
         st.header("❓ 폐차 관련 자주 묻는 질문 (FAQ)")
         st.write("자주 묻는 질문 목록입니다. 질문을 클릭하시면 답변을 확인할 수 있습니다.")
 
@@ -407,7 +438,56 @@ def show_main_app():
             return
 
         df = pd.DataFrame(faq_list)
-        for i, row in df.iterrows():
+
+        # 검색창과 버튼을 같은 행에 배치하여 수평 정렬
+        col1, col2 = st.columns([0.82, 0.18])
+        with col1:
+            query = st.text_input("", placeholder="검색어를 입력하세요").strip()
+        with col2:
+            # 버튼 스타일 적용 (색상 #1158e0, 흰 글자, 높이 등)
+            st.markdown(
+                """
+        <style>
+        /* 이 블록 내부(div id="search-btn-area")에 있는 Streamlit 버튼만 스타일링 */
+        #search-btn-area .stButton>button {
+            background-color: #1158e0 !important;
+            color: #ffffff !important;
+            height: 44px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        #search-btn-area .stButton>button:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        </style>
+        <div id="search-btn-area"></div>
+        """,
+                unsafe_allow_html=True,
+            )
+            search_clicked = st.button("검색", key="search_button")
+
+        # 검색 실행 조건
+        filtered = df
+        if (search_clicked if 'search_clicked' in locals() else False) or query:
+            q_lower = query.lower()
+            mask = (
+                df.get("Q", "").astype(str).str.lower().str.contains(q_lower, na=False)
+                | df.get("A", "").astype(str).str.lower().str.contains(q_lower, na=False)
+                | df.get("출처", "").astype(str).str.lower().str.contains(q_lower, na=False)
+            )
+            filtered = df[mask]
+            if filtered.empty:
+                st.info(f"'{query}'(을)를 포함하는 FAQ 항목이 없습니다.")
+                return
+
+        st.write("")
+        st.write("---")
+        st.write("")
+
+        for i, row in filtered.reset_index(drop=True).iterrows():
             q = row.get("Q", "")
             a = row.get("A", "")
             src = row.get("출처", "")
@@ -415,6 +495,12 @@ def show_main_app():
                 st.markdown(a)
                 if src:
                     st.caption(f"출처: {src}")
+                st.write("")
+            st.write("")
+
+        # 메인 라우팅 위까지만
+
+        # 메인 라우팅 위까지만
 
 
     # --- 실적 데이터 유틸리티 함수 (search.py) ---
@@ -477,21 +563,14 @@ def show_main_app():
     def show_performance_data():
         """ 실적 데이터 조회 및 시각화 페이지 """
         
-        # ❗️ [경로 수정] search.py와 data 폴더가 같은 view 폴더 안에 있으므로 ./data로 변경
+        # ❗️ [경로 수정] 요청하신 대로 "view/data"로 수정
         DATA_DIR = "./data" 
 
         # 1. JSON 파일 목록 정의
         json_files = []
         try:
-            # os.listdir이 상대 경로를 올바르게 인식하도록 합니다.
-            if not os.path.isdir(DATA_DIR):
-                st.error(f"❌ '{DATA_DIR}' 폴더를 찾을 수 없습니다. (현재 작업 경로: {os.getcwd()})")
-                st.error("search.py가 있는 view 폴더 내에 data 폴더가 있는지 확인해주세요.")
-                return
-
             json_files = [f for f in os.listdir(DATA_DIR) if f.endswith(".json")]
             json_files.sort()
-            
         except FileNotFoundError:
             st.error(f"❌ '{DATA_DIR}' 폴더를 찾을 수 없습니다. JSON 파일을 이 폴더에 넣어주세요.")
             return
@@ -567,7 +646,7 @@ def show_main_app():
 
 
     # --- 뉴스 카드 표시 함수 (show_news_cards) (search.py) ---
-    def show_news_cards(csv_file_path="google_news_limited.csv"): # ❗️ 파일 이름 확인
+    def show_news_cards():
         """
         Streamlit에서 카드뉴스를 CSV 기반으로 표시하는 함수
         """
@@ -576,7 +655,7 @@ def show_main_app():
         st.write("카드를 클릭하면 뉴스 원문 페이지로 이동합니다.")
 
         try:
-            df = pd.read_csv(csv_file_path, encoding='utf-8-sig')
+            df = pd.read_csv(NEWS_CSV, encoding='utf-8-sig')
             df.columns = df.columns.str.strip()
             if df.empty:
                 st.warning("CSV에 뉴스 데이터가 없습니다.")
@@ -634,9 +713,7 @@ def show_main_app():
             st.components.v1.html(html_content, height=800, scrolling=True)
 
         except FileNotFoundError:
-            st.error(f"❌ CSV 파일 '{csv_file_path}'을(를) 찾을 수 없습니다.")
-            st.error(f"(현재 작업 경로: {os.getcwd()})")
-            st.error(f"search.py가 있는 폴더({os.path.dirname(__file__)})에 파일이 있는지 확인하세요.")
+            st.error(f"CSV 파일 '{NEWS_CSV}'을(를) 찾을 수 없습니다.")
         except Exception as e:
             st.error(f"뉴스 카드 표시 중 오류 발생: {e}")
 
@@ -756,7 +833,32 @@ def show_main_app():
         # (이 부분은 그대로 둡니다)
         show_news_cards()
     
-    # ❗️ [삭제] 회원탈퇴 버튼 로직 제거
+    # ❗️ [조건 3] 회원탈퇴 버튼 (사이드바 최하단) 나중에 구현할거임!!!!!
+    # 다른 모든 사이드바 요소가 추가된 후 마지막에 배치
+    # st.sidebar.write("---") # 구분선
+    # with st.sidebar.expander("회원탈퇴 ⚠️"):
+    #     st.warning("회원탈퇴 시 복구할 수 없습니다.")
+    #     withdraw_password = st.text_input("비밀번호 확인", type="password", key="withdraw_pass")
+        
+    #     # 회원탈퇴 버튼은 빨간색(primary)으로 강조
+    #     st.markdown('<style>div[data-testid="stButton"] > button[kind="primary"] { background-color: #d93025; color: white; border-color: #d93025; }</style>', unsafe_allow_html=True)
+        
+    #     if st.button("회원탈퇴 실행", type="primary", key="withdraw_btn_bottom"):
+    #         if not withdraw_password:
+    #             st.error("비밀번호를 입력하세요.")
+    #         else:
+    #             current_username = st.session_state.get("username")
+    #             result = handle_api_withdraw(current_username, withdraw_password)
+                
+    #             if result.get("success"):
+    #                 st.success(result.get("message", "회원탈퇴 성공"))
+    #                 # 세션 초기화 및 로그아웃
+    #                 st.session_state.logged_in = False
+    #                 st.session_state.username = None
+    #                 st.session_state.show_welcome_popup = False
+    #                 st.rerun() # 즉시 로그인 페이지로 이동
+    #             else:
+    #                 st.error(result.get("message", "회원탈N퇴 실패. 비밀번호를 확인하세요."))
 
 
 # -----------------------------------------------------------------
@@ -764,8 +866,13 @@ def show_main_app():
 # -----------------------------------------------------------------
 
 # --- 세션 상태 키 초기화 ---
-# ❗️ [삭제] 로그인 관련 세션 상태('logged_in', 'show_welcome_popup', 'username') 초기화 제거
-# [유지] 메인 앱 세션 상태 초기화
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "show_welcome_popup" not in st.session_state:
+    st.session_state.show_welcome_popup = False
+if "username" not in st.session_state:
+    st.session_state.username = None 
+# [추가] 메인 앱 세션 상태 초기화 (로그인 시 필요)
 if 'menu_selection' not in st.session_state:
     st.session_state.menu_selection = '홈'
 if 'current_page' not in st.session_state:
@@ -780,6 +887,5 @@ if 'district_select' not in st.session_state:
     st.session_state.district_select = '전체'
 
 
-# --- 로그인 상태에 따라 다른 화면 표시 ---
-# ❗️ [수정] 로그인 라우터를 제거하고 메인 앱을 바로 실행합니다.
+
 show_main_app()

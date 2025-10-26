@@ -4,19 +4,20 @@ Date        : 2025-10-23
 Description : FAQ CSV 파일을 읽어서 DataFrame 생성
 File Role   : CSV → pandas 변환 전용 (DB 저장 전 단계)
 """
-
+import sys
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(PROJECT_ROOT)) 
 import pandas as pd
+from utils.path_manager import FAQ_CSV
 
 def read_faq_csv():
     """
     FAQ CSV 파일을 읽어서 DataFrame으로 반환
-    - 파일 경로: C:\\project\\project\\jiyong\\faq.csv
-    - 필수 컬럼: QUESTION, ANSWER
     """
-    csv_path = r"C:\project\project\jiyong\FAQ.csv"
 
     try:
-        df = pd.read_csv(csv_path, encoding="utf-8")
+        df = pd.read_csv(FAQ_CSV, encoding="utf-8")
         df.columns = [col.strip().upper() for col in df.columns]
 
         required_cols = {"QUESTION", "ANSWER"}
@@ -28,7 +29,7 @@ def read_faq_csv():
         return df
 
     except FileNotFoundError:
-        print(f"⚠️ 파일을 찾을 수 없습니다: {csv_path}")
+        print(f"⚠️ 파일을 찾을 수 없습니다: {FAQ_CSV}")
         return pd.DataFrame(columns=["QUESTION", "ANSWER"])
 
     except Exception as e:

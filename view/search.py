@@ -3,7 +3,10 @@ Author: 문지영 / 신지용 (병합)
 Date: 2025-10-24 (최종 수정일)
 Description: 폐차장 조회/FAQ/실적 데이터 통합 화면 (API 기반 회원관리 기능 통합)
 """
-
+import sys
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(PROJECT_ROOT)) 
 import streamlit.components.v1 as components 
 import plotly.express as px
 from pathlib import Path
@@ -14,9 +17,9 @@ import math, requests
 import json
 import os
 from io import BytesIO
-
+from utils.path_manager import NEWS_CSV
 # 이 파일(search.py)이 있는 폴더(view)의 경로를 기준으로 삼습니다.
-BASE_DIR = Path(__file__).resolve().parent
+# BASE_DIR = Path(__file__).resolve().parent
 
 # -----------------------------------------------------------------
 # 🌟 1. 설정 (상수)
@@ -733,7 +736,7 @@ def show_main_app():
 
 
     # --- 뉴스 카드 표시 함수 (show_news_cards) (search.py) ---
-    def show_news_cards(csv_file_path="google_news_limited.csv"):
+    def show_news_cards():
         """
         Streamlit에서 카드뉴스를 CSV 기반으로 표시하는 함수
         """
@@ -742,7 +745,7 @@ def show_main_app():
         st.write("카드를 클릭하면 뉴스 원문 페이지로 이동합니다.")
 
         try:
-            df = pd.read_csv(csv_file_path, encoding='utf-8-sig')
+            df = pd.read_csv(NEWS_CSV, encoding='utf-8-sig')
             df.columns = df.columns.str.strip()
             if df.empty:
                 st.warning("CSV에 뉴스 데이터가 없습니다.")
@@ -800,7 +803,7 @@ def show_main_app():
             st.components.v1.html(html_content, height=800, scrolling=True)
 
         except FileNotFoundError:
-            st.error(f"CSV 파일 '{csv_file_path}'을(를) 찾을 수 없습니다.")
+            st.error(f"CSV 파일 '{NEWS_CSV}'을(를) 찾을 수 없습니다.")
         except Exception as e:
             st.error(f"뉴스 카드 표시 중 오류 발생: {e}")
 
