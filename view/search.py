@@ -1,7 +1,7 @@
 """
 Author: 문지영 / 신지용 (병합)
-Date: 2025-10-24 (최종 수정일)
-Description: 폐차장 조회/FAQ/실적 데이터 통합 화면 (API 기반 회원관리 기능 통합)
+Date: 2025-10-27 (최종 수정일)
+Description: 주석 삭제
 """
 import sys
 from pathlib import Path
@@ -18,24 +18,16 @@ import json
 import os
 from io import BytesIO
 from utils.path_manager import NEWS_CSV
-# 이 파일(search.py)이 있는 폴더(view)의 경로를 기준으로 삼습니다.
-# BASE_DIR = Path(__file__).resolve().parent
 
-# -----------------------------------------------------------------
-# 🌟 1. 설정 (상수)
-# -----------------------------------------------------------------
-
-# API 엔드포인트
 API_BASE_URL = "http://127.0.0.1:5000"
 API_SCRAPYARD = f"{API_BASE_URL}/scrapyards"
 API_FAQ_URL = f"{API_BASE_URL}/faqs"
 API_SUBREGIONS_URL = f"{API_BASE_URL}/subregions" 
-# [추가] 회원관리 API
 API_LOGIN_URL = f"{API_BASE_URL}/login"
 API_REGISTER_URL = f"{API_BASE_URL}/register"
 API_WITHDRAW_URL = f"{API_BASE_URL}/withdraw"
 
-REGION_CODE_MAP = {"서울": "02", "경기": "01", "인천": "11"}   # 지역명 <-> 지역코드 변환 맵
+REGION_CODE_MAP = {"서울": "02", "경기": "01", "인천": "11"}  
 
 MENU_ITEMS_WITH_EMOJI = [
     ('🏠 홈', '홈'),
@@ -44,10 +36,6 @@ MENU_ITEMS_WITH_EMOJI = [
     ('📈 실적 데이터', '실적 데이터'),
     ('📰 카드뉴스', '카드뉴스')
 ]
-
-# -----------------------------------------------------------------
-# 🌟 2. 회원관리 API 호출 함수
-# -----------------------------------------------------------------
 
 def handle_api_login(username, password):
     """백엔드 API로 로그인을 시도합니다."""
@@ -65,20 +53,6 @@ def handle_api_register(username, password):
     except requests.exceptions.RequestException as e:
         return {"success": False, "message": f"서버 연결 오류: {e}"}
 
-
-
-# def handle_api_withdraw(username, password): 나중에 구현할거임!!!!
-#     """백엔드 API로 회원탈퇴를 시도합니다."""
-#     try:
-#         response = requests.post(API_WITHDRAW_URL, json={"username": username, "password": password})
-#         return response.json()
-#     except requests.exceptions.RequestException as e:
-#         return {"success": False, "message": f"서버 연결 오류: {e}"}
-
-# -----------------------------------------------------------------
-# 🌟 3. 로그인/회원가입 페이지
-# -----------------------------------------------------------------
-
 def show_login_page():
     """로그인 및 회원가입 UI를 탭으로 표시합니다."""
     st.set_page_config(
@@ -90,7 +64,6 @@ def show_login_page():
 
     tab1, tab2 = st.tabs(["로그인", "회원가입"])
 
-    # --- 로그인 탭 ---
     with tab1:
         st.subheader("로그인")
         with st.form("login_form"):
@@ -111,7 +84,6 @@ def show_login_page():
                     else:
                         st.error(result.get("message", "로그인에 실패했습니다."))
 
-    # --- 회원가입 탭 ---
     with tab2:
         st.subheader("회원가입")
         with st.form("register_form"):
@@ -128,22 +100,16 @@ def show_login_page():
                 else:
                     result = handle_api_register(reg_username, reg_password)
                     if result.get("success"):
-                        # ❗️ [조건 1] 회원가입 성공 시 자동 로그인
                         st.session_state.logged_in = True
                         st.session_state.username = reg_username
                         st.session_state.show_welcome_popup = True
-                        st.rerun() # 메인 화면으로 즉시 이동
+                        st.rerun() 
                     else:
                         st.error(result.get("message", "회원가입에 실패했습니다."))
 
-
-# -----------------------------------------------------------------
-# 🌟 4. 메인 애플리케이션
-# -----------------------------------------------------------------
 def show_main_app():
     """로그인 성공 시, 기존의 메인 애플리케이션을 표시합니다."""
 
-    # 0. 페이지 설정
     st.set_page_config(
         page_title="수도권 폐차장 조회 및 FAQ 시스템",
         page_icon="🚙",
@@ -151,23 +117,18 @@ def show_main_app():
         initial_sidebar_state="expanded"
     )
     
-    # ❗️ [조건 1] 환영 팝업 (가장 먼저 실행)
     if st.session_state.show_welcome_popup:
         username = st.session_state.get("username", "사용자")
         st.success(f"🎉 환영합니다, {username} 님! 좋은 하루 되세요~", icon="👋")
         st.balloons()
-        # 팝업은 한 번만 띄우도록 상태 변경
         st.session_state.show_welcome_popup = False
 
-
-    # ❗️ [조건 2] 로그아웃 버튼 (사이드바 최상단)
     if st.sidebar.button("로그아웃 🔒", key="logout_btn_top", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.username = None 
-        st.session_state.show_welcome_popup = False # 팝업 상태 초기화
+        st.session_state.show_welcome_popup = False 
         st.rerun() 
 
-    # --- 기존 CSS (search.py) ---
     st.markdown("""
     <style>
     /* ... (기존 search.py의 CSS 스타일과 동일) ... */
@@ -236,7 +197,6 @@ def show_main_app():
     """, unsafe_allow_html=True)
 
 
-    # --- API 호출 유틸 (search.py) ---
     @st.cache_data
     def check_api_base(url: str = API_BASE_URL, timeout: int = 3) -> bool:
         try:
@@ -287,7 +247,6 @@ def show_main_app():
                 normalized.append({"Q": str(q).strip(), "A": str(a).strip(), "출처": str(src).strip()})
         return normalized
 
-    # --- 카카오맵 URL 생성 함수 (search.py) ---
     def create_kakaomap_url(address):
         """주소를 카카오맵 검색 URL로 인코딩하여 새 창으로 여는 URL을 반환합니다."""
         base_url = "https://map.kakao.com/"
@@ -299,8 +258,6 @@ def show_main_app():
         encoded_address = urllib.parse.quote(address)
         return f"https://map.kakao.com/?q={encoded_address}&map_type=TYPE_MAP&src=internal"
 
-
-    # --- 폐차장 데이터 조회 함수 (search.py) ---
     def get_scrapyard_list_with_address(selected_area, selected_district):
         """
         Flask API로 폐차장 데이터를 요청하여 DataFrame으로 반환
@@ -338,7 +295,6 @@ def show_main_app():
             return pd.DataFrame()
 
 
-    # --- 콜백 함수 (search.py) ---
     def perform_search_and_reset():
         """검색을 수행하고 페이지 및 지도 세션 상태를 초기화합니다."""
         selected_area = st.session_state.area_select 
@@ -353,18 +309,11 @@ def show_main_app():
     def set_menu(menu_name):
         """사이드바 메뉴 선택 시 세션 상태를 업데이트하고 페이지를 새로고침합니다."""
         st.session_state.menu_selection = menu_name
-        # 메뉴를 바꿀 때, 지도 정보 초기화
         st.session_state.map_info = {'address': None, 'url': None} 
 
-    # --- 사이드바 메뉴 및 세션 상태 초기화 (search.py) ---
-    # (세션 상태 초기화는 파일 하단 메인 라우터로 이동)
-
     st.sidebar.title("⚙️ INFORMATION")
-    # 이모지를 포함한 버튼 생성 (메인 메뉴)
     for label_with_emoji, item in MENU_ITEMS_WITH_EMOJI:
-        # 현재 선택된 메뉴라면 CSS 클래스를 적용
         if st.session_state.menu_selection == item:
-            # Streamlit 버튼을 div로 래핑하고 CSS 클래스를 적용합니다.
             st.sidebar.markdown(f'<div class="selected-menu-btn">', unsafe_allow_html=True)
             st.sidebar.button(
                 label_with_emoji, 
@@ -383,18 +332,14 @@ def show_main_app():
                 use_container_width=True
             )
         
-    # 현재 선택된 메뉴 가져오기
     menu = st.session_state.menu_selection
 
-    # --- 폐차장 조회 함수 (show_scrapyard_finder) (search.py) ---
     def show_scrapyard_finder():
         """ 폐차장 조회 페이지 (지도 임베드 기능 통합) """
-        # (기존 search.py와 동일한 내용)
         st.header ("🚙 수도권 폐차장 조회")
         st.write("원하는 지역과 세부 지역을 선택한 후 검색하세요.")
 
         col1, col2, col3 = st.columns([1, 1, 0.4])
-        # 검색 조건을 세션 상태에 저장
         with col1:
             st.selectbox(
                 "지역별 검색 (시/도)",
@@ -424,12 +369,10 @@ def show_main_app():
             )
             
         with col3:
-            # 📌 검색 버튼만 파란색 스타일을 적용하기 위해 클래스를 적용
             st.markdown('<div class="blue-search-button">', unsafe_allow_html=True)
             st.button("검색", on_click=perform_search_and_reset, key="search_button_widget", use_container_width=True) 
             st.markdown('</div>', unsafe_allow_html=True)    
                             
-        # 페이징 및 결과 출력 영역
         if not st.session_state.last_search_df.empty:
             
             result_df = st.session_state.last_search_df
@@ -444,8 +387,6 @@ def show_main_app():
             end_row = start_row + page_size
             paginated_df = result_df.iloc[start_row:end_row].copy()
 
-            # ... (이하 페이징 및 지도 로직 동일) ...
-            # 결과 테이블 헤더 수동 생성
             header_cols = st.columns([2.5, 3.5, 1.5, 2.0]) 
             header_cols[0].markdown('**업체명**')
             header_cols[1].markdown('**주소**')
@@ -454,7 +395,6 @@ def show_main_app():
 
             st.markdown('<hr class="header-divider"/>', unsafe_allow_html=True) 
 
-            # 결과 테이블 내용 수동 생성 (버튼 통합)
             for index, row in paginated_df.iterrows():
                 row_cols = st.columns([2.5, 3.5, 1.5, 2.0])
                 
@@ -463,7 +403,6 @@ def show_main_app():
                 row_cols[2].markdown(row['연락처'])
 
                 with row_cols[3]:
-                    # '지도 보기' 버튼은 일반 버튼 스타일(미색) 적용
                     if st.button("🗺️ 지도 보기", key=f"mapbtn{row['ID']}", use_container_width=True):
                         st.session_state.map_info['address'] = row['주소']
                         st.session_state.map_info['url'] = get_kakao_map_iframe_url(row['주소'])
@@ -471,7 +410,6 @@ def show_main_app():
                 
                 st.markdown('<hr class="row-divider"/>', unsafe_allow_html=True)
             
-            # 3. 페이지 이동 버튼
             st.markdown("---")
             col_prev, col_page_info, col_next = st.columns([1, 2, 1])
             
@@ -492,7 +430,6 @@ def show_main_app():
         else:
             st.info("검색 조건을 선택하고 '검색' 버튼을 눌러주세요.")
 
-        # 5-3. 지도 임베드 영역
         if st.session_state.map_info['address']:
             st.markdown("---")
             st.subheader(f"🗺️ 위치 확인: {st.session_state.map_info['address']}")
@@ -504,11 +441,9 @@ def show_main_app():
                     marginwidth="0" marginheight="0" src="{map_url}">
                 </iframe>
                 """,
-                height=520, # iframe 높이
+                height=520, 
             )
 
-
-    # --- FAQ 시스템 함수 (show_faq_system) (search.py) ---
     def show_faq_system():
         st.header("❓ 폐차 관련 자주 묻는 질문 (FAQ)")
         st.write("자주 묻는 질문 목록입니다. 질문을 클릭하시면 답변을 확인할 수 있습니다.")
@@ -529,12 +464,10 @@ def show_main_app():
 
         df = pd.DataFrame(faq_list)
 
-        # 검색창과 버튼을 같은 행에 배치하여 수평 정렬
         col1, col2 = st.columns([0.82, 0.18])
         with col1:
             query = st.text_input("", placeholder="검색어를 입력하세요").strip()
         with col2:
-            # 버튼 스타일 적용 (색상 #1158e0, 흰 글자, 높이 등)
             st.markdown(
                 """
         <style>
@@ -559,7 +492,6 @@ def show_main_app():
             )
             search_clicked = st.button("검색", key="search_button")
 
-        # 검색 실행 조건
         filtered = df
         if (search_clicked if 'search_clicked' in locals() else False) or query:
             q_lower = query.lower()
@@ -588,17 +520,10 @@ def show_main_app():
                 st.write("")
             st.write("")
 
-        # 메인 라우팅 위까지만
 
-        # 메인 라우팅 위까지만
-
-
-    # --- 실적 데이터 유틸리티 함수 (search.py) ---
     def json_to_dataframe(json_path):
-        # (기존 search.py와 동일한 내용)
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        # ... (이하 파싱 로직 동일) ...
         if isinstance(data, dict):
             if "data" in data:
                 data = data["data"]
@@ -649,14 +574,11 @@ def show_main_app():
         return output.getvalue()
 
 
-    # --- 실적 데이터 시각화 함수 (show_performance_data) (search.py) ---
     def show_performance_data():
         """ 실적 데이터 조회 및 시각화 페이지 """
         
-        # ❗️ [경로 수정] 요청하신 대로 "view/data"로 수정
         DATA_DIR = "./data" 
 
-        # 1. JSON 파일 목록 정의
         json_files = []
         try:
             json_files = [f for f in os.listdir(DATA_DIR) if f.endswith(".json")]
@@ -669,8 +591,6 @@ def show_main_app():
             st.warning(f"⚠ {DATA_DIR} 폴더에 JSON 파일이 없습니다.")
             return
         
-        # ... (이하 기존 search.py와 동일한 내용) ...
-        # 2. 제목 출력
         st.title("📊 연도별 폐차 실적 데이터") 
         
         if 'performance_year_select' not in st.session_state or st.session_state.performance_year_select not in json_files:
@@ -692,7 +612,6 @@ def show_main_app():
         selected_path = os.path.join(DATA_DIR, st.session_state.performance_year_select)
         st.markdown("---") 
 
-        # 4. 데이터 표시 및 시각화
         try:
             df = json_to_dataframe(selected_path) 
             st.dataframe(df, use_container_width=True, height=500)
@@ -705,7 +624,6 @@ def show_main_app():
             )
             st.markdown("---")
             
-            # 시각화 ① 지역별 합계 바 차트
             st.subheader("📈 지역별 폐차 실적 합계")
             region_sum = (
                 df.groupby("지역", as_index=False)["지역합계"]
@@ -720,7 +638,6 @@ def show_main_app():
             fig_region.update_traces(texttemplate="%{text:,}", textposition="outside")
             st.plotly_chart(fig_region, use_container_width=True)
 
-            # 시각화 ② 차종별 비율 파이차트
             st.subheader("🥧 차종별 비율")
             vehicle_sum = df.groupby("차종")["합계"].sum().reset_index()
             fig_pie = px.pie(
@@ -735,12 +652,10 @@ def show_main_app():
             st.error(f"❌ 데이터 처리 중 오류 발생: {e}")
 
 
-    # --- 뉴스 카드 표시 함수 (show_news_cards) (search.py) ---
     def show_news_cards():
         """
         Streamlit에서 카드뉴스를 CSV 기반으로 표시하는 함수
         """
-        # (기존 search.py와 동일한 내용)
         st.header("📰 폐차 관련 뉴스")
         st.write("카드를 클릭하면 뉴스 원문 페이지로 이동합니다.")
 
@@ -751,7 +666,6 @@ def show_main_app():
                 st.warning("CSV에 뉴스 데이터가 없습니다.")
                 return
             
-            # ... (이하 HTML/CSS 및 카드 생성 로직 동일) ...
             required_cols = ['title', 'snippet', 'link', 'image']
             for col in required_cols:
                 if col not in df.columns:
@@ -808,11 +722,9 @@ def show_main_app():
             st.error(f"뉴스 카드 표시 중 오류 발생: {e}")
 
 
-    # --- 메인 라우팅 (search.py) ---
     if menu == '홈':
         st.title("🏠 수도권 폐차 정보 통합 시스템")
         
-        # 1. 핵심 통계 요약 
         st.header("📊 수도권 폐차 현황 (최신 데이터 기반)")
         col_stat1, col_stat2, col_stat3 = st.columns(3)
 
@@ -831,7 +743,6 @@ def show_main_app():
             
         st.write("---") 
 
-        # 2. 시스템 소개 및 주요 기능 (누락되었던 부분)
         st.header("✨ 시스템 개요 및 주요 기능")
         st.markdown("""
             복잡한 폐차 과정을 쉽고 투명하게! 
@@ -843,7 +754,6 @@ def show_main_app():
         with col_1:
             st.subheader("1. 폐차장 위치 조회 🔎")
             st.info("실시간 위치 기반 검색 및 지도 연동 기능을 통해 가장 가까운 폐차장을 찾고 연락하세요.")
-            # 연동 버튼 추가 (폐차장 조회)
             st.markdown('<div class="home-link-button">', unsafe_allow_html=True)
             if st.button("🔎 폐차장 조회 바로가기", key="home_to_scrapyard_btn", use_container_width=True):
                 set_menu('폐차장 조회')
@@ -853,7 +763,6 @@ def show_main_app():
         with col_2:
             st.subheader("2. FAQ 검색 시스템 ❓")
             st.info("폐차 절차, 필요 서류, 보조금 등 자주 묻는 질문에 대한 정확한 답변을 제공합니다.")
-            # 연동 버튼 추가 (FAQ 검색 시스템)
             st.markdown('<div class="home-link-button">', unsafe_allow_html=True)
             if st.button("❓ FAQ 검색 바로가기", key="home_to_faq_btn", use_container_width=True):
                 set_menu('FAQ 검색 시스템')
@@ -864,7 +773,6 @@ def show_main_app():
         with col_3:
             st.subheader("3. 실적 데이터 📈")
             st.info("지역별/연도별 폐차 실적 데이터를 시각화 자료로 제공합니다.")
-            # 연동 버튼 추가 (실적 데이터)
             st.markdown('<div class="home-link-button">', unsafe_allow_html=True)
             if st.button("📈 실적 데이터 바로가기", key="home_to_performance_btn", use_container_width=True):
                 set_menu('실적 데이터')
@@ -874,7 +782,6 @@ def show_main_app():
 
         st.write("---")
 
-        # 3. 폐차 유형별 간편 안내 추가 (누락되었던 부분)
         st.header("🔍 어떤 폐차를 진행해야 할까요?")
         st.write("차량 상태와 목적에 따라 필요한 절차가 다릅니다. 자주 찾는 폐차 유형을 확인해보세요.")
 
@@ -892,7 +799,6 @@ def show_main_app():
         
         st.write("---")
 
-        # 4. 폐차 절차 가이드 (누락되었던 부분)
         st.header("✅ 폐차 진행 과정 (간편 가이드)")
         
         col_a, col_b, col_c = st.columns(3)
@@ -911,58 +817,21 @@ def show_main_app():
             
 
     elif menu == '폐차장 조회':
-        # (이 부분은 그대로 둡니다)
         show_scrapyard_finder()
     elif menu == 'FAQ 검색 시스템':
-        # (이 부분은 그대로 둡니다)
         show_faq_system()
     elif menu == '실적 데이터':
-        # (이 부분은 그대로 둡니다)
         show_performance_data()
     elif menu == '카드뉴스':
-        # (이 부분은 그대로 둡니다)
         show_news_cards()
-    
-    # ❗️ [조건 3] 회원탈퇴 버튼 (사이드바 최하단) 나중에 구현할거임!!!!!
-    # 다른 모든 사이드바 요소가 추가된 후 마지막에 배치
-    # st.sidebar.write("---") # 구분선
-    # with st.sidebar.expander("회원탈퇴 ⚠️"):
-    #     st.warning("회원탈퇴 시 복구할 수 없습니다.")
-    #     withdraw_password = st.text_input("비밀번호 확인", type="password", key="withdraw_pass")
-        
-    #     # 회원탈퇴 버튼은 빨간색(primary)으로 강조
-    #     st.markdown('<style>div[data-testid="stButton"] > button[kind="primary"] { background-color: #d93025; color: white; border-color: #d93025; }</style>', unsafe_allow_html=True)
-        
-    #     if st.button("회원탈퇴 실행", type="primary", key="withdraw_btn_bottom"):
-    #         if not withdraw_password:
-    #             st.error("비밀번호를 입력하세요.")
-    #         else:
-    #             current_username = st.session_state.get("username")
-    #             result = handle_api_withdraw(current_username, withdraw_password)
-                
-    #             if result.get("success"):
-    #                 st.success(result.get("message", "회원탈퇴 성공"))
-    #                 # 세션 초기화 및 로그아웃
-    #                 st.session_state.logged_in = False
-    #                 st.session_state.username = None
-    #                 st.session_state.show_welcome_popup = False
-    #                 st.rerun() # 즉시 로그인 페이지로 이동
-    #             else:
-    #                 st.error(result.get("message", "회원탈N퇴 실패. 비밀번호를 확인하세요."))
+ 
 
-
-# -----------------------------------------------------------------
-# 🌟 5. 메인 라우터 (로그인 상태에 따라 분기)
-# -----------------------------------------------------------------
-
-# --- 세션 상태 키 초기화 ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "show_welcome_popup" not in st.session_state:
     st.session_state.show_welcome_popup = False
 if "username" not in st.session_state:
     st.session_state.username = None 
-# [추가] 메인 앱 세션 상태 초기화 (로그인 시 필요)
 if 'menu_selection' not in st.session_state:
     st.session_state.menu_selection = '홈'
 if 'current_page' not in st.session_state:
@@ -977,8 +846,7 @@ if 'district_select' not in st.session_state:
     st.session_state.district_select = '전체'
 
 
-# --- 로그인 상태에 따라 다른 화면 표시 ---
 if st.session_state.logged_in:
-    show_main_app()  # 로그인 O -> 메인 앱 표시
+    show_main_app()  
 else:
-    show_login_page() # 로그인 X -> 로그인/회원가입 폼 표시
+    show_login_page() 
