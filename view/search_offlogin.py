@@ -715,7 +715,6 @@ def show_main_app():
             st.caption("특정 연식 기준(차령) 초과 시 압류 해제 없이 폐차(차령초과 말소) 가능. 완료까지 약 2개월 소요됩니다.")
         
         st.write("---")
-
         st.header("✅ 폐차 진행 과정 (간편 가이드)")
         
         col_a, col_b, col_c = st.columns(3)

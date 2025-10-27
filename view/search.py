@@ -651,7 +651,6 @@ def show_main_app():
         except Exception as e:
             st.error(f"❌ 데이터 처리 중 오류 발생: {e}")
 
-
     def show_news_cards():
         """
         Streamlit에서 카드뉴스를 CSV 기반으로 표시하는 함수
