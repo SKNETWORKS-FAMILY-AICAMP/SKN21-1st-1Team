@@ -107,45 +107,63 @@
 ### Web Scraping
 ![Selenium](https://img.shields.io/badge/Selenium-43B02A?style=for-the-badge&logo=selenium&logoColor=white)
 
-## 프로젝트 구조
+## 📂 프로젝트 구조
 <img src="image/flow.png" alt="flow" width="auto">
 
-본 프로젝트는 데이터 사전 처리 단계와 실시간 조회 서비스 단계로 구성됩니다.
+본 프로젝트는 **데이터 사전 처리 단계**와 **실시간 조회 서비스 단계**로 구성되어 있습니다.
 
-1. 데이터 사전 처리 (Pre-processing)
+---
+
+### 🔹 1. 데이터 사전 처리 (Pre-processing)
 애플리케이션 서버가 실행되기 전, 사용자에게 제공할 데이터를 미리 준비하는 단계입니다.
 
-데이터 수집: Python을 이용해 필요한 원본 데이터를 크롤링합니다.
+- **데이터 수집:** Python을 이용해 필요한 원본 데이터를 크롤링합니다.  
+- **데이터 저장 (1차):** 수집된 데이터를 CSV 파일 형태로 로컬에 저장합니다.  
+- **데이터베이스 적재 (Pre-load):** 저장된 CSV 파일을 가공하여 메인 데이터베이스(MySQL)에 삽입(Insert)합니다.  
 
-데이터 저장 (1차): 수집된 데이터를 CSV 파일 형태로 로컬에 저장합니다.
+> 📌 이 과정을 통해 서버는 항상 정제된 최신 데이터를 기준으로 실행을 시작합니다.
 
-데이터베이스 적재 (Pre-load): 저장된 CSV 파일을 가공하여 메인 데이터베이스MySQL에 삽입(Insert)합니다. 이 과정을 통해 서버는 항상 정제된 최신 데이터를 기준으로 실행을 시작합니다.
+---
 
-2. 실시간 조회 서비스 (Runtime Flow)
-사용자가 시스템을 이용하는 실제 동작 흐름입니다. 프론트엔드(Streamlit)와 백엔드(Flask)가 명확히 분리되어 동작합니다.
+### 🔹 2. 실시간 조회 서비스 (Runtime Flow)
+사용자가 시스템을 이용하는 실제 동작 흐름입니다.  
+프론트엔드(Streamlit)와 백엔드(Flask)가 명확히 분리되어 동작합니다.
 
-① 사용자 인증: 사용자는 Streamlit(프론트엔드) 화면을 통해 시스템에 로그인합니다.
+1️⃣ **사용자 인증:**  
+사용자는 Streamlit(프론트엔드) 화면을 통해 시스템에 로그인합니다.
 
-② 데이터 요청 (Front → Back): 사용자가 특정 데이터를 조회하면, Streamlit은 조회에 필요한 파라미터(검색어, 조건 등)를 JSON 형식으로 구성하여 Flask(백엔드) API 서버에 전송(Request)합니다.
+2️⃣ **데이터 요청 (Front → Back):**  
+사용자가 특정 데이터를 조회하면, Streamlit은 조회에 필요한 파라미터(검색어, 조건 등)를  
+JSON 형식으로 구성하여 Flask(백엔드) API 서버에 전송(Request)합니다.
 
-③ 백엔드 처리 (Back-end Logic):
+3️⃣ **백엔드 처리 (Back-end Logic):**  
+- Flask 서버는 수신한 JSON 데이터를 파싱(Parsing)합니다.  
+- 파싱된 파라미터를 기반으로 적절한 SQL 쿼리문을 생성합니다.  
+- 생성된 SQL을 데이터베이스(DB)로 전송하여 실시간으로 데이터를 조회합니다.
 
-Flask 서버는 수신한 JSON 데이터를 파싱(Parsing)합니다.
+4️⃣ **데이터 응답 (Back → Front):**  
+DB로부터 조회된 결과값을 다시 JSON 형식으로 가공하여 Streamlit으로 응답(Response)합니다.
 
-파싱된 파라미터를 기반으로 적절한 SQL 쿼리문을 생성합니다.
+5️⃣ **결과 표시:**  
+Streamlit은 응답받은 데이터를 이용해 사용자 화면에 조회 결과를 동적으로 표시합니다.
 
-생성된 SQL을 데이터베이스(DB)로 전송하여 실시간으로 데이터를 조회합니다.
-
-④ 데이터 응답 (Back → Front):
-
-DB로부터 조회된 결과값을 다시 JSON 형식으로 가공합니다.
-
-이 JSON 데이터를 Streamlit(프론트엔드) 측에 응답(Response)으로 전송합니다.
-
-⑤ 결과 표시: Streamlit은 백엔드로부터 받은 JSON 데이터를 이용해 사용자 화면에 조회 결과를 동적으로 표시합니다.
 
 ## 데이터베이스 구조
 <img src="image/ERD.png" alt="ERD" width="auto">
+
+## 🧱 테이블 요약
+| 테이블명 | 설명 | 주요 컬럼 |
+|-----------|-------|------------|
+| **USER** | 사용자 계정 및 로그인 정보 관리 | `user_id`, `user_pw`, `created_at` |
+| **SCRAPYARD_INFO** | 수도권 폐차장 정보 저장 | `SY_NAME`, `ADDRESS`, `REGION_CODE`, `SUBREGION_NAME`, `CREATED_AT` |
+| **FAQ_INFO** | 자주 묻는 질문(FAQ) 데이터 관리 | `question`, `answer`, `created_at` |
+
+## ⚙️ 주요 특징
+- **3개의 주요 테이블(USER / SCRAPYARD_INFO / FAQ_INFO)** 로 구성  
+- **REGION_CODE / SUBREGION_NAME** 기준으로 지역별 폐차장 검색 가능  
+- **AUTO_INCREMENT + 기본 타임스탬프** 적용으로 관리 용이  
+- **Streamlit ↔ Flask ↔ MySQL** 간 연동 구조에 최적화  
+- 추후 `USER`를 기반으로 등록자·관리자 기능 등 확장 가능  
 
 ## 주요 기능
 
@@ -206,7 +224,8 @@ https://www.kadra.or.kr/kadra/contents/main/main.html
 - 폐차 보조금에 대한 업체를 광고 할 수 있는 게시판
 - 로그인 한 유저를 관리할 수 있는 AdminPage 및 Adming 권한 Table
 - 일정시간 페이지 비이동 시, TimeOut 기능
-- 
+- 사용자 폐차 등록 게시판 구현
+- 뉴스기사 사이트 별로 실시간 크롤링 구현
 
 ### 아쉬운 점
 - 폐차장과 관련 된 Data들의 크롤링이 쉽지 않아, 통계의 경우 엑셀파일을 Convert 하는 모듈을 작업하여 사용한 것.
