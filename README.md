@@ -145,7 +145,7 @@ DB로부터 조회된 결과값을 다시 JSON 형식으로 가공합니다.
 ⑤ 결과 표시: Streamlit은 백엔드로부터 받은 JSON 데이터를 이용해 사용자 화면에 조회 결과를 동적으로 표시합니다.
 
 ## 데이터베이스 구조
-<img src="image/erd.png" alt="ERD" width="auto">
+<img src="image/ERD.png" alt="ERD" width="auto">
 
 ## 주요 기능
 
