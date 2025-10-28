@@ -13,7 +13,19 @@ from utils.path_manager import FAQ_CSV
 
 def read_faq_csv():
     """
-    FAQ CSV 파일을 읽어서 DataFrame으로 반환
+    📘 FAQ CSV 파일을 읽어서 DataFrame으로 반환하는 함수
+
+    기능:
+        - 지정된 FAQ CSV 파일 경로(FAQ_CSV)에서 데이터 로드
+        - 컬럼명 공백 제거 및 대문자 통일
+        - 필수 컬럼(QUESTION, ANSWER) 유효성 검사
+        - 예외 상황(파일 없음, 컬럼 누락, 인코딩 오류 등) 처리
+
+    Returns:
+        pd.DataFrame: QUESTION, ANSWER 컬럼을 포함한 DataFrame
+
+    Raises:
+        ValueError: CSV 파일에서 필수 컬럼 누락 시
     """
 
     try:

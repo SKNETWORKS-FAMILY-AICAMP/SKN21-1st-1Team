@@ -12,14 +12,28 @@ import pymysql, json
 from werkzeug.security import generate_password_hash, check_password_hash
 from db_config import DB_CONFIG
 
+# 🧩 Flask 인스턴스 생성
 app = Flask(__name__)
 
+# -------------------------------------------------------
+# ⚙️ 공통 함수: DB 연결 관리
+# -------------------------------------------------------
 def get_connection():
+    """MySQL 연결 (autocommit=True)"""
     return pymysql.connect(**DB_CONFIG, autocommit=True)
 
+# -------------------------------------------------------
+# 🏠 메인 페이지 (서버 상태 + API 목록)
+# -------------------------------------------------------
 
 @app.route("/")
 def home():
+    """
+    API 서버의 루트 페이지
+    - 현재 서버 상태 및 사용 가능한 API 목록을 HTML 형태로 표시
+    - Streamlit 연동 및 팀 프로젝트 문서 대체 역할
+    """
+
     # 메인 화면 (기존과 동일)
     return """
     <!DOCTYPE html>
@@ -149,9 +163,16 @@ def home():
     </html>
     """
 
-# 🚗 폐차장 데이터 조회 (기존과 동일)
+# -------------------------------------------------------
+# 🚗 폐차장 지역 목록 조회 API
+# -------------------------------------------------------
+
 @app.route("/subregions", methods=["GET"])
 def get_subregions():
+    """
+    [GET] /subregions?region=02  
+    특정 REGION_CODE(예: 02)에 해당하는 하위지역(SUBREGION_NAME) 목록 반환
+    """
     region_code = request.args.get("region") 
     if not region_code:
         app.logger.warning("region_code 파라미터가 없습니다.")
@@ -179,9 +200,15 @@ def get_subregions():
 
     return Response(json.dumps(subregion_list, ensure_ascii=False), content_type="application/json; charset=utf-8")
 
-# 🚗 폐차장 데이터 조회 (기존과 동일)
+# -------------------------------------------------------
+# 🚗 폐차장 정보 조회 API
+# -------------------------------------------------------
 @app.route("/scrapyards", methods=["GET"])
 def get_scrapyards():
+    """
+    [GET] /scrapyards?region=02&subregion=강서구  
+    조건(region, subregion)에 맞는 폐차장 정보 반환
+    """
     region_code = request.args.get("region")
     subregion_name = request.args.get("subregion")
 
@@ -217,9 +244,15 @@ def get_scrapyards():
 
     return Response(json.dumps(results, ensure_ascii=False), content_type="application/json; charset=utf-8")
 
-# 💬 FAQ 데이터 조회 (기존과 동일)
+# -------------------------------------------------------
+# 💬 FAQ 데이터 조회 API
+# -------------------------------------------------------
 @app.route("/faqs", methods=["GET"])
 def get_faqs():
+    """
+    [GET] /faqs  
+    FAQ_INFO 테이블의 전체 FAQ 데이터를 JSON 형태로 반환
+    """
     conn = get_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     query = """
@@ -234,13 +267,19 @@ def get_faqs():
     json_data = json.dumps(results, ensure_ascii=False)
     return Response(json_data, content_type="application/json; charset=utf-8")
 
-# -----------------------------------------------------------------
-# 👤 [신규] 회원 관리 API
-# -----------------------------------------------------------------
+# -------------------------------------------------------
+# 👤 회원 관리 API (register / login / withdraw)
+# -------------------------------------------------------
 
-# 👤 1. 회원가입 API
+# 1️⃣ 회원가입 API
 @app.route("/register", methods=["POST"])
 def register_user():
+    """
+    [POST] /register  
+    - 새 사용자 등록  
+    - 비밀번호 해시 후 DB 저장  
+    - 아이디 중복 시 409 반환
+    """
     data = request.json
     username = data.get("username")
     password = data.get("password")
@@ -272,7 +311,7 @@ def register_user():
     finally:
         conn.close()
 
-# 👤 2. 로그인 API
+# 2️⃣ 로그인 API
 @app.route("/login", methods=["POST"])
 def login_user():
     data = request.json
@@ -303,39 +342,46 @@ def login_user():
     finally:
         conn.close()
 
-# 👤 3. 회원탈퇴 API
-@app.route("/withdraw", methods=["POST"])
-def withdraw_user():
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
+# # 👤 3. 회원탈퇴 API (현재 미사용)
+# @app.route("/withdraw", methods=["POST"])
+# def withdraw_user():
+#     """
+#     [POST] /withdraw  
+#     - 사용자 인증 후 회원정보 삭제  
+#     - 비밀번호 불일치 시 401 반환
+#     """
+#     data = request.json
+#     username = data.get("username")
+#     password = data.get("password")
 
-    if not username or not password:
-        return jsonify({"success": False, "message": "아이디와 비밀번호를 입력하세요."}), 400
+#     if not username or not password:
+#         return jsonify({"success": False, "message": "아이디와 비밀번호를 입력하세요."}), 400
 
-    conn = get_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    try:
-        # 1. 먼저 사용자가 맞는지 (로그인과 동일하게) 확인
-        sql_check = "SELECT user_pw FROM USER_INFO WHERE user_id = %s"
-        cursor.execute(sql_check, (username,))
-        user_row = cursor.fetchone()
+#     conn = get_connection()
+#     cursor = conn.cursor(pymysql.cursors.DictCursor)
+#     try:
+#         # 1. 먼저 사용자가 맞는지 (로그인과 동일하게) 확인
+#         sql_check = "SELECT user_pw FROM USER_INFO WHERE user_id = %s"
+#         cursor.execute(sql_check, (username,))
+#         user_row = cursor.fetchone()
 
-        if user_row and check_password_hash(user_row['user_pw'], password):
-            # 2. 사용자가 맞으면 삭제
-            sql_delete = "DELETE FROM USER_INFO WHERE user_id = %s"
-            cursor.execute(sql_delete, (username,))
-            return jsonify({"success": True, "message": "회원탈퇴가 완료되었습니다."})
-        else:
-            # 비밀번호 불일치
-            return jsonify({"success": False, "message": "비밀번호가 잘못되었습니다."}), 401
+#         if user_row and check_password_hash(user_row['user_pw'], password):
+#             # 2. 사용자가 맞으면 삭제
+#             sql_delete = "DELETE FROM USER_INFO WHERE user_id = %s"
+#             cursor.execute(sql_delete, (username,))
+#             return jsonify({"success": True, "message": "회원탈퇴가 완료되었습니다."})
+#         else:
+#             # 비밀번호 불일치
+#             return jsonify({"success": False, "message": "비밀번호가 잘못되었습니다."}), 401
 
-    except Exception as e:
-        app.logger.error(f"Error during withdrawal: {e}")
-        return jsonify({"success": False, "message": "서버 오류가 발생했습니다."}), 500
-    finally:
-        conn.close()
+#     except Exception as e:
+#         app.logger.error(f"Error during withdrawal: {e}")
+#         return jsonify({"success": False, "message": "서버 오류가 발생했습니다."}), 500
+#     finally:
+#         conn.close()
 
-
+# -------------------------------------------------------
+#  서버 실행
+# -------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)

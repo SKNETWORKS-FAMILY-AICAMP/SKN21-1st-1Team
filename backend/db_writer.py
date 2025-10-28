@@ -13,7 +13,17 @@ import numpy as np
 from db_config import DB_CONFIG
 
 def recreate_table():
-    """SCRAPYARD_INFO 테이블을 매 실행 시 새로 생성"""
+    """
+    🧱 SCRAPYARD_INFO 테이블을 매 실행 시 새로 생성하는 함수
+
+    기능:
+        - 기존 테이블이 존재하면 DROP
+        - 새로운 스키마 구조로 테이블 재생성
+
+    Raises:
+        pymysql.MySQLError: DB 연결 또는 SQL 실행 오류 발생 시
+    """
+
     conn = pymysql.connect(**DB_CONFIG)
     cursor = conn.cursor()
 
@@ -38,7 +48,17 @@ def recreate_table():
 
 
 def save_to_db(df):
-    """DataFrame 전체를 DB에 삽입"""
+    """
+    💾 DataFrame 데이터를 SCRAPYARD_INFO 테이블에 삽입하는 함수
+
+    Args:
+        df (pd.DataFrame): DB에 삽입할 폐차장 정보 DataFrame  
+            (필수 컬럼: SY_NAME, CEO_NAME, CONTACT_NUMBER, ADDRESS, REGION_CODE, SUBREGION_NAME)
+
+    Raises:
+        KeyError: 필수 컬럼이 DataFrame에 존재하지 않을 경우
+        pymysql.MySQLError: DB 연결 또는 INSERT 중 오류 발생 시
+    """
     df = df.replace({np.nan: None})
 
     conn = pymysql.connect(**DB_CONFIG)
