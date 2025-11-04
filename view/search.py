@@ -1,8 +1,9 @@
 """
 Author: 문지영 / 신지용 (병합)
-Date: 2025-10-27 (최종 수정일)
-Description: 주석 삭제
+Date: 2025-11-04 (최종 수정일)
+Description: 주석 삭제 및 홈페이지 개선
 """
+
 import sys
 from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -38,7 +39,6 @@ MENU_ITEMS_WITH_EMOJI = [
 ]
 
 def handle_api_login(username, password):
-    """백엔드 API로 로그인을 시도합니다."""
     try:
         response = requests.post(API_LOGIN_URL, json={"username": username, "password": password})
         return response.json()
@@ -46,7 +46,6 @@ def handle_api_login(username, password):
         return {"success": False, "message": f"서버 연결 오류: {e}"}
 
 def handle_api_register(username, password):
-    """백엔드 API로 회원가입을 시도합니다."""
     try:
         response = requests.post(API_REGISTER_URL, json={"username": username, "password": password})
         return response.json()
@@ -54,7 +53,6 @@ def handle_api_register(username, password):
         return {"success": False, "message": f"서버 연결 오류: {e}"}
 
 def show_login_page():
-    """로그인 및 회원가입 UI를 탭으로 표시합니다."""
     st.set_page_config(
         page_title="로그인",
         page_icon="🔒",
@@ -108,8 +106,6 @@ def show_login_page():
                         st.error(result.get("message", "회원가입에 실패했습니다."))
 
 def show_main_app():
-    """로그인 성공 시, 기존의 메인 애플리케이션을 표시합니다."""
-
     st.set_page_config(
         page_title="수도권 폐차장 조회 및 FAQ 시스템",
         page_icon="🚙",
@@ -131,8 +127,6 @@ def show_main_app():
 
     st.markdown("""
     <style>
-    /* ... (기존 search.py의 CSS 스타일과 동일) ... */
-    /* ----------------- 모든 Streamlit 버튼의 기본 스타일 (미색 계열) ----------------- */
     div.stButton > button:first-child {
         color: #31333f; /* 글자색 검은색 */
         background-color: #f0f2f6; /* 미색 계열 배경 */
@@ -143,30 +137,6 @@ def show_main_app():
         margin-top: 10px; /* 모든 버튼에 기본 여백 적용 */
         transition: all 0.2s; /* 호버 애니메이션을 위한 트랜지션 추가 */
     }
-    /* ----------------- 검색 버튼 스타일 (파란색 강제 유지) ----------------- */
-    .blue-search-button div.stButton > button:first-child {
-        color: white !important;
-        background-color: #1158e0 !important; 
-        border: 1px solid #1158e0 !important;
-        font-weight: bold !important;
-    }
-    /* ----------------- 사이드바 일반 버튼 스타일 (선택되지 않은) ----------------- */
-    .sidebar div.stButton > button:first-child {
-        width: 100%; 
-        margin-bottom: 5px;
-        text-align: left; 
-        font-weight: normal;
-        padding: 8px 10px; 
-        margin-top: 5px; /* 사이드바 버튼은 상단 마진을 줄임 */
-    }
-    /* ----------------- 사이드바 버튼 스타일 (선택됨) ----------------- */
-    .selected-menu-btn div.stButton > button:first-child {
-        background-color: #1158e0 !important; /* 파란색 강조색 */
-        color: white !important; /* 텍스트 흰색 */
-        border: 1px solid #1158e0 !important;
-        font-weight: bold;
-    }
-    /* ❗️ [조건 2] 로그아웃 버튼 스타일 (상단에 배치되므로 다른 버튼과 스타일 통일) */
     [data-testid="stSidebar"] div.stButton > button[key="logout_btn_top"] {
         width: 100%; 
         margin-bottom: 15px; /* 제목과 간격 띄우기 */
@@ -182,14 +152,11 @@ def show_main_app():
         color: white !important;
         background-color: #1158e0 !important;
     }
-                
-    /* ----------------- 경고/정보 스타일 ----------------- */
     div[data-testid="stAlert"] div[role="alert"] {
         text-align: center; 
         padding-top: 15px;
         padding-bottom: 15px;
     }
-                
     .stVerticalBlock .st-emotion-cache-wfksaw.e196pkbe2 {
     align-items: center;
 }     
@@ -217,7 +184,6 @@ def show_main_app():
         
     @st.cache_data
     def load_subregions_from_api(region_code: str, timeout: int = 5):
-        """선택한 시/도에 해당하는 시/군/구 목록을 Flask API로부터 받아옵니다."""
         if not region_code:
             return [] 
         
@@ -248,20 +214,15 @@ def show_main_app():
         return normalized
 
     def create_kakaomap_url(address):
-        """주소를 카카오맵 검색 URL로 인코딩하여 새 창으로 여는 URL을 반환합니다."""
         base_url = "https://map.kakao.com/"
         encoded_address = urllib.parse.quote(address)
         return f"{base_url}?q={encoded_address}"
 
     def get_kakao_map_iframe_url(address):
-        """주소를 카카오맵 iframe 임베딩용 URL로 인코딩하여 반환합니다. (검색창 숨김)"""
         encoded_address = urllib.parse.quote(address)
         return f"https://map.kakao.com/?q={encoded_address}&map_type=TYPE_MAP&src=internal"
 
     def get_scrapyard_list_with_address(selected_area, selected_district):
-        """
-        Flask API로 폐차장 데이터를 요청하여 DataFrame으로 반환
-        """
         try:
             params = {}
             if selected_area not in ("", "전체"):
@@ -294,9 +255,7 @@ def show_main_app():
             st.error(f"🚨 Flask 서버 통신 오류: {e}")
             return pd.DataFrame()
 
-
     def perform_search_and_reset():
-        """검색을 수행하고 페이지 및 지도 세션 상태를 초기화합니다."""
         selected_area = st.session_state.area_select 
         selected_district = st.session_state.district_select 
         
@@ -307,7 +266,6 @@ def show_main_app():
         st.session_state.last_search_df = result_df
 
     def set_menu(menu_name):
-        """사이드바 메뉴 선택 시 세션 상태를 업데이트하고 페이지를 새로고침합니다."""
         st.session_state.menu_selection = menu_name
         st.session_state.map_info = {'address': None, 'url': None} 
 
@@ -335,7 +293,6 @@ def show_main_app():
     menu = st.session_state.menu_selection
 
     def show_scrapyard_finder():
-        """ 폐차장 조회 페이지 (지도 임베드 기능 통합) """
         st.header ("🚙 수도권 폐차장 조회")
         st.write("원하는 지역과 세부 지역을 선택한 후 검색하세요.")
 
@@ -472,7 +429,6 @@ def show_main_app():
             st.markdown(
                 """
         <style>
-        /* 이 블록 내부(div id="search-btn-area")에 있는 Streamlit 버튼만 스타일링 */
         #search-btn-area .stButton>button {
             background-color: #1158e0 !important;
             color: #ffffff !important;
@@ -568,7 +524,6 @@ def show_main_app():
         return pd.DataFrame(records)
 
     def to_excel(df):
-        """DataFrame을 엑셀 파일 형태로 변환합니다."""
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer: 
             df.to_excel(writer, index=False, sheet_name="폐차 실적")
@@ -576,8 +531,6 @@ def show_main_app():
 
 
     def show_performance_data():
-        """ 실적 데이터 조회 및 시각화 페이지 """
-        
         DATA_DIR = "./data" 
 
         json_files = []
@@ -653,9 +606,6 @@ def show_main_app():
             st.error(f"❌ 데이터 처리 중 오류 발생: {e}")
 
     def show_news_cards():
-        """
-        Streamlit에서 카드뉴스를 CSV 기반으로 표시하는 함수
-        """
         st.header("📰 폐차 관련 뉴스")
         st.write("카드를 클릭하면 뉴스 원문 페이지로 이동합니다.")
 
@@ -674,7 +624,6 @@ def show_main_app():
 
             html_content = """
             <style>
-            /* ... (카드 CSS 동일) ... */
             .grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -720,7 +669,6 @@ def show_main_app():
             st.error(f"CSV 파일 '{NEWS_CSV}'을(를) 찾을 수 없습니다.")
         except Exception as e:
             st.error(f"뉴스 카드 표시 중 오류 발생: {e}")
-
 
     if menu == '홈':
         st.title("🏠 수도권 폐차 정보 통합 시스템")
@@ -769,7 +717,6 @@ def show_main_app():
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-
         with col_3:
             st.subheader("3. 실적 데이터 📈")
             st.info("지역별/연도별 폐차 실적 데이터를 시각화 자료로 제공합니다.")
@@ -778,43 +725,6 @@ def show_main_app():
                 set_menu('실적 데이터')
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-
-
-        st.write("---")
-
-        st.header("🔍 어떤 폐차를 진행해야 할까요?")
-        st.write("차량 상태와 목적에 따라 필요한 절차가 다릅니다. 자주 찾는 폐차 유형을 확인해보세요.")
-
-        type_col1, type_col2 = st.columns(2)
-
-        with type_col1:
-            st.subheader("✅ 일반 폐차 (가장 흔함)")
-            st.success("차량에 압류나 저당이 **없는** 경우")
-            st.caption("차량 인수 후 24시간 이내 말소 등록 완료. 간편하고 빠르게 진행 가능합니다. 자세한 절차는 FAQ에서 확인하세요.")
-
-        with type_col2:
-            st.subheader("⚠️ 압류/저당 폐차 (차령초과)")
-            st.warning("차량에 **압류나 저당이 남아있는** 경우")
-            st.caption("특정 연식 기준(차령) 초과 시 압류 해제 없이 폐차(차령초과 말소) 가능. 완료까지 약 2개월 소요됩니다.")
-        
-        st.write("---")
-
-        st.header("✅ 폐차 진행 과정 (간편 가이드)")
-        
-        col_a, col_b, col_c = st.columns(3)
-        
-        with col_a:
-            st.metric("STEP 1. 신청 및 상담", "원하는 폐차장 선택", "전화/방문 접수")
-            st.caption("폐차장 조회 메뉴에서 업체를 선택하고 폐차를 신청합니다.")
-            
-        with col_b:
-            st.metric("STEP 2. 차량 인계 및 서류", "차량 견인 및 서류 제출", "등록증, 신분증 사본")
-            st.caption("차량을 인계하고 필수 서류를 폐차장에 전달합니다.")
-            
-        with col_c:
-            st.metric("STEP 3. 말소 및 대금 수령", "말소 등록 및 대금 수령", "24시간 내 완료")
-            st.caption("폐차장이 말소 등록 후 말소증을 전달하고 대금을 지급합니다.")
-            
 
     elif menu == '폐차장 조회':
         show_scrapyard_finder()
@@ -825,7 +735,6 @@ def show_main_app():
     elif menu == '카드뉴스':
         show_news_cards()
  
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "show_welcome_popup" not in st.session_state:
@@ -844,7 +753,6 @@ if 'area_select' not in st.session_state:
     st.session_state.area_select = '전체'
 if 'district_select' not in st.session_state:
     st.session_state.district_select = '전체'
-
 
 if st.session_state.logged_in:
     show_main_app()  
